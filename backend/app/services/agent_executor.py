@@ -75,12 +75,19 @@ async def execute_agent(
     scenario_key: Optional[str] = None,
     faults: Optional[Dict[str, str]] = None,
     triggered_by: Optional[str] = None,
+    enforce: bool = True,
 ) -> ExecutionRecord:
     settings = get_settings()
     ctx = InvocationContext(
         correlation_id=correlation_id, agent=agent_view, sandbox=sandbox, run_id=run_id,
         session_subject=task.session_subject, faults=dict(faults or {}), triggered_by=triggered_by,
+        enforce=enforce,
     )
+    task.correlation_id = correlation_id
+    task.run_id = run_id
+    task.scenario_key = scenario_key
+    task.faults = dict(faults or {})
+    timeout = settings.remote_agent_timeout_seconds if snapshot.get("agent_type") == "remote_agent" else settings.agent_run_timeout_seconds
     with db_session() as db:
         db.add(Trace(
             id=correlation_id, kind=kind, run_id=run_id, scenario_key=scenario_key, agent_id=agent_view.id,
@@ -90,7 +97,8 @@ async def execute_agent(
     event_bus.publish(
         "agent.request", f"{agent_view.key} received a task" + (f" ({scenario_key})" if scenario_key else ""),
         payload={"task": task.task, "session_subject": task.session_subject, "scenario": scenario_key,
-                 "model_fault": task.model_fault, "faults": faults or {}},
+                 "model_fault": task.model_fault, "faults": faults or {}, "enforced": enforce,
+                 "direct_tool_call": task.direct_tool_call},
         correlation_id=correlation_id, run_id=run_id, agent_id=agent_view.id,
     )
 
@@ -105,14 +113,17 @@ async def execute_agent(
     try:
         adapter = build_agent(snapshot)
         output = await asyncio.wait_for(
-            adapter.run(task, GatewayToolClient(ctx), emit), timeout=settings.agent_run_timeout_seconds
+            adapter.run(task, GatewayToolClient(ctx), emit), timeout=timeout
         )
+        if output is not None and output.error_kind:
+            # The agent ran and reported its own failure (for example a model timeout).
+            error_kind, error = output.error_kind, output.error or output.error_kind
     except AgentUnavailable as exc:
         error_kind, error = "unavailable", str(exc)
     except AgentFailure as exc:
         error_kind, error = "failure", str(exc)
     except asyncio.TimeoutError:
-        error_kind, error = "timeout", f"Agent did not finish within {settings.agent_run_timeout_seconds:g}s"
+        error_kind, error = "timeout", f"Agent did not finish within {timeout:g}s"
     except Exception as exc:  # adapter bug: record honestly
         log.exception("agent crashed")
         error_kind, error = "failure", f"Agent raised {type(exc).__name__}"

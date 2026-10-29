@@ -48,6 +48,13 @@ class Settings(BaseSettings):
     hosted_api_key_env: str = Field(default="AEGIS_HOSTED_API_KEY", alias="AEGIS_HOSTED_API_KEY_ENV")
     hosted_timeout_seconds: float = Field(default=60.0, alias="AEGIS_HOSTED_TIMEOUT_SECONDS", gt=0, le=600)
 
+    # E-commerce agent platform (optional remote agent). The token authenticates AEGIS to the
+    # e-commerce backend's internal API; it lives only in .env (see `make link-ecommerce`).
+    ecommerce_base_url: str = Field(default="http://127.0.0.1:8100", alias="AEGIS_ECOMMERCE_BASE_URL")
+    ecommerce_token: str = Field(default="", alias="AEGIS_ECOMMERCE_TOKEN", repr=False)
+    ecommerce_ui_url: str = Field(default="http://127.0.0.1:5174", alias="AEGIS_ECOMMERCE_UI_URL")
+    remote_agent_timeout_seconds: float = Field(default=240.0, alias="AEGIS_REMOTE_AGENT_TIMEOUT_SECONDS", gt=0, le=1800)
+
     @field_validator("data_dir", mode="before")
     @classmethod
     def _resolve_data_dir(cls, v):  # type: ignore[no-untyped-def]

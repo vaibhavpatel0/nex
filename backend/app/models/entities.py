@@ -74,6 +74,26 @@ class ApiSession(Base):
     user: Mapped[User] = relationship()
 
 
+class ServiceToken(Base):
+    """Credential for another application (for example the e-commerce backend) calling SENTINEL.
+
+    Only the SHA-256 digest is stored. Scopes are platform permissions; agent_keys and
+    tool_namespaces bind the token to the agents it may act for and the tools it may register.
+    """
+
+    __tablename__ = "service_tokens"
+    id: Mapped[str] = mapped_column(String(40), primary_key=True)
+    name: Mapped[str] = mapped_column(String(64), unique=True, nullable=False)
+    token_hash: Mapped[str] = mapped_column(String(64), unique=True, nullable=False)
+    scopes: Mapped[list] = mapped_column(JSON, nullable=False)
+    agent_keys: Mapped[list] = mapped_column(JSON, default=list, nullable=False)
+    tool_namespaces: Mapped[list] = mapped_column(JSON, default=list, nullable=False)
+    created_by: Mapped[Optional[str]] = mapped_column(String(64))
+    created_at: Mapped[datetime] = mapped_column(UTCDateTime, default=utcnow, nullable=False)
+    last_used_at: Mapped[Optional[datetime]] = mapped_column(UTCDateTime)
+    revoked_at: Mapped[Optional[datetime]] = mapped_column(UTCDateTime)
+
+
 # --------------------------------------------------------------------------- agents & tools
 class ToolDefinition(Base):
     __tablename__ = "tool_definitions"
@@ -85,6 +105,11 @@ class ToolDefinition(Base):
     args_schema: Mapped[dict] = mapped_column(JSON, nullable=False)
     sensitive_fields: Mapped[list] = mapped_column(JSON, default=list, nullable=False)
     simulated: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    # "builtin" for in-process tools; "remote:<namespace>" for tools executed by an external
+    # application that asks SENTINEL for a decision before every call.
+    provider: Mapped[str] = mapped_column(String(48), default="builtin", server_default="builtin", nullable=False)
+    revision: Mapped[int] = mapped_column(Integer, default=1, server_default="1", nullable=False)
+    updated_at: Mapped[Optional[datetime]] = mapped_column(UTCDateTime)
     __table_args__ = (
         CheckConstraint("operation in ('read','write','egress')", name="ck_tool_operation"),
     )
@@ -108,7 +133,7 @@ class Agent(Base):
     key: Mapped[str] = mapped_column(String(64), unique=True, nullable=False)
     name: Mapped[str] = mapped_column(String(128), nullable=False)
     description: Mapped[str] = mapped_column(Text, default="", nullable=False)
-    agent_type: Mapped[str] = mapped_column(String(24), nullable=False)  # simulated | local_model | hosted_model
+    agent_type: Mapped[str] = mapped_column(String(24), nullable=False)  # simulated | local_model | hosted_model | remote_agent
     behavior: Mapped[Optional[str]] = mapped_column(String(24))  # simulated agents: naive | guarded
     provider: Mapped[str] = mapped_column(String(32), nullable=False)  # deterministic | ollama | openai_compatible
     model_id: Mapped[Optional[str]] = mapped_column(String(128))
@@ -122,7 +147,7 @@ class Agent(Base):
     updated_at: Mapped[datetime] = mapped_column(UTCDateTime, default=utcnow, nullable=False)
     permission_profile: Mapped[PermissionProfile] = relationship()
     __table_args__ = (
-        CheckConstraint("agent_type in ('simulated','local_model','hosted_model')", name="ck_agent_type"),
+        CheckConstraint("agent_type in ('simulated','local_model','hosted_model','remote_agent')", name="ck_agent_type"),
     )
 
 
@@ -225,6 +250,9 @@ class TestRun(Base):
     software_version: Mapped[str] = mapped_column(String(32), nullable=False)
     scenario_keys: Mapped[list] = mapped_column(JSON, nullable=False)
     status: Mapped[str] = mapped_column(String(16), nullable=False, index=True)
+    # protected: SENTINEL enforces decisions. baseline: decisions are recorded but not enforced,
+    # allowed only for test runs, which always execute against sandbox fixtures.
+    mode: Mapped[str] = mapped_column(String(16), default="protected", server_default="protected", nullable=False)
     replay_of_run_id: Mapped[Optional[str]] = mapped_column(ForeignKey("test_runs.id"))
     triggered_by: Mapped[Optional[str]] = mapped_column(String(64))
     total_scenarios: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
@@ -238,6 +266,7 @@ class TestRun(Base):
     suite: Mapped[Optional[TestSuite]] = relationship()
     __table_args__ = (
         CheckConstraint("status in ('queued','running','completed','failed','cancelled')", name="ck_run_status"),
+        CheckConstraint("mode in ('protected','baseline')", name="ck_run_mode"),
     )
 
 
@@ -382,6 +411,8 @@ class ToolCall(Base):
     result_classification: Mapped[Optional[str]] = mapped_column(String(24))
     flags: Mapped[list] = mapped_column(JSON, default=list, nullable=False)
     origin: Mapped[str] = mapped_column(String(24), default="user_task", nullable=False)
+    # False only in baseline test runs: the decision was recorded but not enforced.
+    enforced: Mapped[bool] = mapped_column(Boolean, default=True, server_default="1", nullable=False)
     latency_ms: Mapped[Optional[float]] = mapped_column(Float)
     created_at: Mapped[datetime] = mapped_column(UTCDateTime, default=utcnow, nullable=False, index=True)
     completed_at: Mapped[Optional[datetime]] = mapped_column(UTCDateTime)

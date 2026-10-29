@@ -25,14 +25,18 @@ def connection_status(db: Session, a: Agent) -> dict:
     if not a.enabled:
         return {"state": "disabled", "detail": "Agent is disabled"}
     if a.agent_type == "simulated":
-        return {"state": "ready", "detail": "Simulated deterministic agent (no external dependency)"}
-    key = "ollama" if a.provider == "ollama" else "hosted"
+        return {"state": "ready", "detail": "Rule-based simulated agent (no language model, no external dependency)"}
+    key = {"ollama": "ollama", "ecommerce_http": "ecommerce"}.get(a.provider, "hosted")
     ic = db.get(IntegrationConfig, key)
     if ic is None or ic.status == "unchecked":
         return {"state": "unknown", "detail": "Integration not checked yet. Open Integrations and run a check."}
     models = ic.detail.get("models", []) if isinstance(ic.detail, dict) else []
     if ic.status != "ok":
-        return {"state": "unavailable", "detail": ic.detail.get("error") or ic.status, "checked_at": iso(ic.last_checked_at)}
+        return {"state": "unavailable", "detail": ic.detail.get("error") or ic.detail.get("detail") or ic.status,
+                "checked_at": iso(ic.last_checked_at)}
+    if key == "ecommerce":
+        return {"state": "ready", "detail": ic.detail.get("detail", "E-commerce backend reachable at last check"),
+                "checked_at": iso(ic.last_checked_at)}
     if key == "ollama" and a.model_id and a.model_id not in models and f"{a.model_id}:latest" not in models \
             and not a.model_id.endswith(":cloud"):
         return {"state": "unavailable", "detail": f"Model {a.model_id} is not installed (ollama pull {a.model_id})",
@@ -46,7 +50,8 @@ def agent_out(db: Session, a: Agent) -> dict:
     d = model_to_dict(a)
     d["permission_profile"] = {"id": a.permission_profile.id, "key": a.permission_profile.key, "name": a.permission_profile.name}
     d["connection"] = connection_status(db, a)
-    d["label"] = {"simulated": "Simulated", "local_model": "Local model", "hosted_model": "External hosted model"}[a.agent_type]
+    d["label"] = {"simulated": "Simulated (rule-based)", "local_model": "Local model", "hosted_model": "External hosted model",
+                  "remote_agent": "Remote agent (e-commerce platform)"}.get(a.agent_type, a.agent_type)
     d["last_run"] = {"id": last_run.id, "status": last_run.status, "created_at": iso(last_run.created_at),
                      "counts": (last_run.summary or {}).get("counts")} if last_run else None
     d["last_event"] = {"seq": last_ev.seq, "event_type": last_ev.event_type, "summary": last_ev.summary,

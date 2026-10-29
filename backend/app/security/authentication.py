@@ -15,7 +15,7 @@ import threading
 import time
 from dataclasses import dataclass
 from datetime import timedelta
-from typing import Dict, List, Optional
+from typing import Dict, FrozenSet, List, Optional, Sequence, Tuple
 
 from fastapi import Depends, HTTPException, Request, status
 from sqlalchemy import select
@@ -24,7 +24,7 @@ from sqlalchemy.orm import Session
 from app.config.settings import get_settings
 from app.core.timeutil import new_id, utcnow
 from app.database.base import get_db
-from app.models import ApiSession, User
+from app.models import ApiSession, ServiceToken, User
 
 _SCRYPT_N = 2**14
 _SCRYPT_R = 8
@@ -70,6 +70,52 @@ class Principal:
     username: str
     role: str
     session_id: Optional[str] = None
+    # Service principals carry explicit scopes and bindings instead of a role's permissions.
+    permissions: Optional[FrozenSet[str]] = None
+    agent_keys: Tuple[str, ...] = ()
+    tool_namespaces: Tuple[str, ...] = ()
+
+    @property
+    def is_service(self) -> bool:
+        return self.role == "service"
+
+
+SERVICE_TOKEN_PREFIX = "aegis_svc_"
+
+
+def create_service_token(db: Session, name: str, scopes: Sequence[str], agent_keys: Sequence[str],
+                         tool_namespaces: Sequence[str], created_by: str) -> str:
+    """Create or rotate a service token. Returns the plaintext token once; only its hash is stored."""
+    from app.security.authorization import ALL_PERMISSIONS
+
+    bad = [x for x in scopes if x not in ALL_PERMISSIONS or x in ("users:manage", "data:delete", "policies:write")]
+    if bad:
+        raise ValueError("scopes not allowed for service tokens: " + ", ".join(bad))
+    token = SERVICE_TOKEN_PREFIX + secrets.token_urlsafe(32)
+    row = db.execute(select(ServiceToken).where(ServiceToken.name == name)).scalar_one_or_none()
+    if row is None:
+        row = ServiceToken(id=new_id("svc"), name=name, token_hash="", scopes=[], created_at=utcnow())
+        db.add(row)
+    row.token_hash = token_digest(token)
+    row.scopes = sorted(set(scopes))
+    row.agent_keys = sorted(set(agent_keys))
+    row.tool_namespaces = sorted(set(tool_namespaces))
+    row.created_by = created_by
+    row.revoked_at = None
+    db.flush()
+    return token
+
+
+def _resolve_service_token(db: Session, token: str) -> Optional[Principal]:
+    row = db.execute(select(ServiceToken).where(ServiceToken.token_hash == token_digest(token))).scalar_one_or_none()
+    if row is None or row.revoked_at is not None:
+        return None
+    now = utcnow()
+    if row.last_used_at is None or (now - row.last_used_at).total_seconds() > 60:
+        row.last_used_at = now  # coarse, to avoid a write on every call
+    return Principal(user_id=row.id, username=f"service:{row.name}", role="service",
+                     permissions=frozenset(row.scopes or []), agent_keys=tuple(row.agent_keys or []),
+                     tool_namespaces=tuple(row.tool_namespaces or []))
 
 
 class LoginThrottle:
@@ -141,6 +187,8 @@ def create_session(db: Session, user: User) -> "tuple[str, ApiSession]":
 def resolve_token(db: Session, token: Optional[str]) -> Optional[Principal]:
     if not token or len(token) > 256:
         return None
+    if token.startswith(SERVICE_TOKEN_PREFIX):
+        return _resolve_service_token(db, token)
     row = db.execute(
         select(ApiSession, User)
         .join(User, User.id == ApiSession.user_id)

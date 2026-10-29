@@ -12,7 +12,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 
-from app.api import aegis_routes, agent_routes, auth_routes, policy_routes, runtime_routes, system_routes
+from app.api import aegis_routes, agent_routes, auth_routes, policy_routes, runtime_routes, sentinel_routes, system_routes
 from app.config.settings import REPO_ROOT, SOFTWARE_VERSION, get_settings
 from app.database.base import init_engine, schema_is_current
 from app.middleware.security import BodySizeLimitMiddleware, RateLimitMiddleware, SecurityHeadersMiddleware
@@ -56,7 +56,7 @@ def create_app() -> FastAPI:
     app.add_middleware(SecurityHeadersMiddleware)
     app.add_middleware(
         CORSMiddleware, allow_origins=settings.cors_origin_list, allow_credentials=False,
-        allow_methods=["GET", "POST", "PATCH"], allow_headers=["Authorization", "Content-Type", "X-Request-ID"],
+        allow_methods=["GET", "POST", "PATCH", "PUT"], allow_headers=["Authorization", "Content-Type", "X-Request-ID"],
     )
 
     @app.exception_handler(RequestValidationError)
@@ -70,7 +70,7 @@ def create_app() -> FastAPI:
         log.exception("unhandled error")
         return JSONResponse({"detail": "Internal server error"}, status_code=500)
 
-    for module in (system_routes, auth_routes, agent_routes, policy_routes, aegis_routes, runtime_routes):
+    for module in (system_routes, auth_routes, agent_routes, policy_routes, aegis_routes, runtime_routes, sentinel_routes):
         app.include_router(module.router, prefix="/api/v1")
     app.include_router(ws_routes.router)
 

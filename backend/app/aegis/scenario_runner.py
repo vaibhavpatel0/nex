@@ -102,8 +102,10 @@ class ScenarioRunner:
 
     def create_run(
         self, *, agent_id: str, suite_key: Optional[str], scenario_keys: Optional[List[str]], label: str,
-        triggered_by: Optional[str], replay_of: Optional[str] = None,
+        triggered_by: Optional[str], replay_of: Optional[str] = None, mode: str = "protected",
     ) -> str:
+        if mode not in ("protected", "baseline"):
+            raise ValueError("mode must be protected or baseline")
         with db_session() as db:
             agent = db.get(Agent, agent_id)
             if agent is None:
@@ -127,13 +129,14 @@ class ScenarioRunner:
             run = TestRun(
                 id=new_id("run"), label=label[:160], suite_id=suite.id if suite else None, agent_id=agent.id,
                 agent_revision=agent.revision, agent_snapshot=agent_snapshot(agent), policy_snapshot=policy_snapshot(db),
-                software_version=SOFTWARE_VERSION, scenario_keys=keys, status="queued", replay_of_run_id=replay_of,
+                software_version=SOFTWARE_VERSION, scenario_keys=keys, status="queued", replay_of_run_id=replay_of, mode=mode,
                 triggered_by=triggered_by, total_scenarios=len(keys), created_at=utcnow(),
             )
             run.policy_hash = run.policy_snapshot["hash"]
             db.add(run)
             run_id = run.id
-        event_bus.publish("run.queued", f"Test run queued: {len(keys)} scenario(s)", payload={"run_id": run_id, "label": label},
+        event_bus.publish("run.queued", f"Test run queued: {len(keys)} scenario(s)" + (" in baseline mode (SENTINEL not enforcing)" if mode == "baseline" else ""),
+                          payload={"run_id": run_id, "label": label, "mode": mode},
                           run_id=run_id, agent_id=agent_id)
         return run_id
 
@@ -171,22 +174,24 @@ class ScenarioRunner:
             run.started_at = utcnow()
             snap = run.agent_snapshot
             keys = list(run.scenario_keys)
+            enforce = run.mode != "baseline"
         view = view_from_snapshot(snap)
         root = get_settings().sandbox_dir / run_id
         event_bus.publish("run.started", f"Test run started for {snap['key']}", payload={"run_id": run_id, "scenarios": keys},
                           run_id=run_id, agent_id=view.id)
         for key in keys:
-            await self._run_scenario(run_id, key, snap, view, root)
+            await self._run_scenario(run_id, key, snap, view, root, enforce)
             with db_session() as db:
                 db.get(TestRun, run_id).completed_scenarios += 1
         self.finalize(run_id)
         shutil.rmtree(root, ignore_errors=True)  # evidence lives in the database; sandboxes are disposable
 
-    async def _run_scenario(self, run_id: str, key: str, snap: Dict[str, Any], view: AgentView, root) -> None:
+    async def _run_scenario(self, run_id: str, key: str, snap: Dict[str, Any], view: AgentView, root, enforce: bool = True) -> None:
         with db_session() as db:
             sc = db.execute(select(Scenario).where(Scenario.key == key)).scalar_one()
             sc_id, version, expected = sc.id, sc.version, copy.deepcopy(sc.expected)
             setup, task_text, required, enabled = scenario_setup(sc), sc.input["task"], list(sc.required_tools), sc.enabled
+            direct_call = copy.deepcopy(sc.input.get("direct_tool_call"))
         started = utcnow()
         correlation = new_id("cor")
         event_bus.publish("scenario.started", f"{key} started", payload={"scenario": key}, correlation_id=correlation,
@@ -201,24 +206,28 @@ class ScenarioRunner:
         sandbox = Sandbox.create(root / key)
         rec = await execute_agent(
             snapshot=snap, agent_view=view,
-            task=AgentTask(task=task_text, session_subject=setup.get("session_subject"), model_fault=setup.get("model_fault")),
+            task=AgentTask(task=task_text, session_subject=setup.get("session_subject"), model_fault=setup.get("model_fault"),
+                           direct_tool_call=direct_call),
             sandbox=sandbox, correlation_id=correlation, kind="test", run_id=run_id, scenario_key=key,
-            faults=setup.get("faults"), triggered_by="aegis-runner",
+            faults=setup.get("faults"), triggered_by="aegis-runner", enforce=enforce,
         )
         flow: Dict[str, Any] = {}
-        if setup.get("approval") and rec.status == "completed":
+        if setup.get("approval") and rec.status == "completed" and snap.get("agent_type") != "remote_agent" and enforce:
             flow = await self._approval_flow(setup["approval"], expected, rec.context)
 
         with db_session() as db:
             calls = [
                 CallRecord(id=c.id, tool_name=c.tool_name, args=c.args_redacted or {}, status=c.status, decision=c.decision,
                            matched_policy=(db.get(PolicyDecision, c.decision_id).matched_policy_key if c.decision_id else None),
-                           error_class=c.error_class, origin=c.origin, latency_ms=c.latency_ms)
+                           error_class=c.error_class, origin=c.origin, latency_ms=c.latency_ms, enforced=c.enforced)
                 for c in db.execute(select(ToolCall).where(ToolCall.correlation_id == correlation)
                                     .order_by(ToolCall.created_at, ToolCall.id)).scalars()
             ]
+        out = rec.output
         obs = Observation(calls=calls, final_text=rec.final_text, final_missing=rec.final_missing,
-                          agent_error_kind=rec.error_kind, agent_error=rec.error, approval_flow=flow, latency_ms=rec.latency_ms)
+                          agent_error_kind=rec.error_kind, agent_error=rec.error, approval_flow=flow, latency_ms=rec.latency_ms,
+                          side_effects=out.side_effects if out else None, invoked_tools=out.invoked_tools if out else None,
+                          invariants=out.invariants if out else None, enforced=enforce)
         ev = evaluate_scenario(expected, obs)
         # Approvals raised inside an automated test are evidence, not work for a human: close them.
         with db_session() as db:

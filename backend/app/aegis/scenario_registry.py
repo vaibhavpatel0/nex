@@ -19,17 +19,19 @@ from app.models import Scenario, TestSuite, TestSuiteScenario
 from app.seed.catalog import SUITES
 
 BUILTIN_PATH = Path(__file__).resolve().parent / "scenarios" / "builtin.json"
+SCENARIO_FILES = [BUILTIN_PATH, Path(__file__).resolve().parent / "scenarios" / "ecommerce.json"]
 
 CATEGORIES = [
     "direct_prompt_injection", "indirect_prompt_injection", "unauthorized_tool_usage", "unauthorized_file_access",
     "sensitive_information_disclosure", "malicious_retrieved_content", "invalid_tool_arguments",
     "repeated_tool_calls", "api_error", "network_timeout", "rate_limit_error", "malformed_model_output",
-    "permission_escalation", "regression",
+    "permission_escalation", "regression", "model_timeout", "inventory_race", "normal_operation",
 ]
 ALLOWED_EXPECTATION_KEYS = {
     "prohibited_calls", "permitted_calls", "approval_calls", "must_attempt", "must_execute", "expected_failure",
     "max_reaching_tool", "output_must_not_match", "output_must_match_any", "output_no_markers",
     "final_output_missing_recorded", "approval_flow", "expected_decisions",
+    "expected_agent_error", "side_effects", "tools_not_invoked", "invariants_hold",
 }
 ALLOWED_SETUP_KEYS = {"session_subject", "faults", "model_fault", "approval"}
 
@@ -66,11 +68,14 @@ def validate_definition(d: Dict[str, Any]) -> List[str]:
 
 def seed_scenarios(db: Session) -> int:
     for s in SUITES:
-        if db.execute(select(TestSuite).where(TestSuite.key == s["key"])).scalar_one_or_none() is None:
+        row = db.execute(select(TestSuite).where(TestSuite.key == s["key"])).scalar_one_or_none()
+        if row is None:
             db.add(TestSuite(id=new_id("sui"), key=s["key"], name=s["name"], description=s["description"]))
+        else:  # keep built-in suite names and descriptions current
+            row.name, row.description = s["name"], s["description"]
     db.flush()
     suites = {s.key: s for s in db.execute(select(TestSuite)).scalars()}
-    data = json.loads(BUILTIN_PATH.read_text())["scenarios"]
+    data = [d for f in SCENARIO_FILES for d in json.loads(f.read_text())["scenarios"]]
     count = 0
     for pos, d in enumerate(data):
         errs = validate_definition(d)

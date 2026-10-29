@@ -20,7 +20,7 @@ import hashlib
 import json
 from dataclasses import dataclass, field
 from datetime import datetime
-from typing import Any, Callable, Dict, List, Optional, Sequence
+from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple
 
 RISK_ORDER = {"low": 0, "medium": 1, "high": 2, "critical": 3}
 SENSITIVITY_RISK = {"low": "low", "medium": "medium", "high": "high"}
@@ -57,6 +57,7 @@ class HistoryItem:
     status: str
     classification: Optional[str]
     created_at: datetime
+    flags: Tuple[str, ...] = ()
 
 
 @dataclass
@@ -248,6 +249,20 @@ def r_suspicious_sequence(inp: EvaluationInput, p: PolicyView) -> RuleResult:
     return RuleResult(False, "No sensitive read earlier in this session")
 
 
+def r_tainted_session(inp: EvaluationInput, p: PolicyView) -> RuleResult:
+    """Triggers for write/egress tools after this session received content flagged as containing
+    embedded instructions (see security/content_scan.py)."""
+    ops = p.params.get("operations", ["write", "egress"])
+    if inp.tool_operation not in ops:
+        return RuleResult(False, "Operation is not covered by the taint rule")
+    wanted = set(p.params.get("flags", ["suspected_injection"]))
+    tainted = [h for h in inp.session_history if h.status == "executed" and wanted.intersection(h.flags)]
+    if tainted:
+        return RuleResult(True, f"Earlier in this session {tainted[-1].tool_name} returned content with embedded "
+                                "instructions; this action needs a human decision")
+    return RuleResult(False, "No untrusted instructions seen in this session")
+
+
 def r_approval_required(inp: EvaluationInput, p: PolicyView) -> RuleResult:
     when = p.params.get("when", "always")
     if when == "always":
@@ -333,6 +348,7 @@ RULES: Dict[str, Callable[[EvaluationInput, PolicyView], RuleResult]] = {
     "sensitive_egress": r_sensitive_egress,
     "suspicious_sequence": r_suspicious_sequence,
     "approval_required": r_approval_required,
+    "tainted_session": r_tainted_session,
     "rate_limit": r_rate_limit,
     "failure_limit": r_failure_limit,
     "url_allowlist": r_url_allowlist,
@@ -344,7 +360,7 @@ RULES: Dict[str, Callable[[EvaluationInput, PolicyView], RuleResult]] = {
 # these are reported as "skipped" because SEN-003 already blocks the call.
 _NEEDS_ARGS = {
     "path_scope", "customer_scope", "db_table_scope", "recipient_allowlist", "attachment_restriction",
-    "sensitive_egress", "suspicious_sequence", "approval_required", "url_allowlist",
+    "sensitive_egress", "suspicious_sequence", "approval_required", "url_allowlist", "tainted_session",
 }
 
 

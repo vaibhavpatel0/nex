@@ -4,6 +4,9 @@
   python -m app.cli create-user NAME ROLE
   python -m app.cli reset-password NAME   set a new password (prompted, not echoed) and sign out all sessions
   python -m app.cli run SUITE AGENT_KEY   run a suite without the web UI and print outcomes
+  python -m app.cli create-service-token NAME --agents a,b --namespaces shop [--scopes ...]
+                                          create or rotate a token for another application (printed once)
+  python -m app.cli reset-password USERNAME
 """
 from __future__ import annotations
 
@@ -73,6 +76,9 @@ def cmd_create_user(args: argparse.Namespace) -> int:
         print("role must be admin, operator or viewer", file=sys.stderr)
         return 2
     pw = os.environ.get("AEGIS_NEW_USER_PASSWORD") or getpass.getpass("Password (min 12 chars): ")
+    if len(pw) < 12:
+        print("Password must be at least 12 characters. Nothing was created.", file=sys.stderr)
+        return 1
     init_engine(get_settings().resolved_database_url)
     with db_session() as db:
         if db.execute(select(User).where(User.username == args.username)).first():
@@ -116,6 +122,63 @@ def cmd_reset_password(args: argparse.Namespace) -> int:
     return 0
 
 
+DEFAULT_SERVICE_SCOPES = "sentinel:evaluate,sentinel:ingest,tools:register,read,tests:run,approvals:decide"
+
+
+def cmd_service_token(args: argparse.Namespace) -> int:
+    from app.database.base import db_session, init_engine
+    from app.security.authentication import create_service_token
+
+    init_engine(get_settings().resolved_database_url)
+    with db_session() as db:
+        try:
+            token = create_service_token(db, args.name, [x.strip() for x in args.scopes.split(",") if x.strip()],
+                                         [x.strip() for x in args.agents.split(",") if x.strip()],
+                                         [x.strip() for x in args.namespaces.split(",") if x.strip()], "cli")
+        except ValueError as exc:
+            print(exc, file=sys.stderr)
+            return 2
+    if args.quiet:
+        print(token)
+    else:
+        print(f"Service token for '{args.name}' (shown once; any previous token for this name is now invalid):")
+        print(token)
+    return 0
+
+
+def cmd_reset_password(args: argparse.Namespace) -> int:
+    from sqlalchemy import select, update
+
+    from app.core.timeutil import utcnow
+    from app.database.base import db_session, init_engine
+    from app.models import ApiSession, User
+    from app.security.authentication import hash_password
+
+    pw = os.environ.get("AEGIS_NEW_USER_PASSWORD")
+    if not pw:
+        pw = getpass.getpass("New password (min 12 chars): ")
+        if pw != getpass.getpass("Repeat new password: "):
+            print("Passwords do not match", file=sys.stderr)
+            return 1
+    try:
+        new_hash = hash_password(pw)
+    except ValueError as exc:
+        print(exc, file=sys.stderr)
+        return 1
+    init_engine(get_settings().resolved_database_url)
+    with db_session() as db:
+        user = db.execute(select(User).where(User.username == args.username)).scalar_one_or_none()
+        if user is None:
+            print("No such user", file=sys.stderr)
+            return 1
+        user.password_hash = new_hash
+        user.disabled = False
+        db.execute(update(ApiSession).where(ApiSession.user_id == user.id, ApiSession.revoked_at.is_(None))
+                   .values(revoked_at=utcnow()))
+    print(f"Password updated for '{args.username}'. Existing sessions were signed out.")
+    return 0
+
+
 def cmd_run(args: argparse.Namespace) -> int:
     from sqlalchemy import select
 
@@ -148,6 +211,16 @@ def main(argv=None) -> int:
     cu.add_argument("username")
     cu.add_argument("role")
     cu.set_defaults(fn=cmd_create_user)
+    rp = sub.add_parser("reset-password")
+    rp.add_argument("username")
+    rp.set_defaults(fn=cmd_reset_password)
+    st = sub.add_parser("create-service-token")
+    st.add_argument("name")
+    st.add_argument("--agents", required=True)
+    st.add_argument("--namespaces", default="")
+    st.add_argument("--scopes", default=DEFAULT_SERVICE_SCOPES)
+    st.add_argument("--quiet", action="store_true")
+    st.set_defaults(fn=cmd_service_token)
     rp = sub.add_parser("reset-password")
     rp.add_argument("username")
     rp.set_defaults(fn=cmd_reset_password)

@@ -51,12 +51,15 @@ def list_integrations(p: Principal = Depends(require("read")), db: Session = Dep
                                                              "api_key_env": s.hosted_api_key_env,
                                                              "models_used_by_agents": _models_needed(db, "openai_compatible")}
     rows.setdefault("garak", {"key": "garak"})["config"] = garak_status()
+    rows.setdefault("ecommerce", {"key": "ecommerce"})["config"] = {
+        "base_url": s.ecommerce_base_url, "ui_url": s.ecommerce_ui_url, "token_configured": bool(s.ecommerce_token),
+        "token_env": "AEGIS_ECOMMERCE_TOKEN"}
     return {"items": list(rows.values())}
 
 
 @router.post("/integrations/{key}/check")
 async def check_integration(key: str, p: Principal = Depends(require("tests:run")), db: Session = Depends(get_db)):
-    ic = db.get(IntegrationConfig, key) if key in ("ollama", "hosted", "garak") else None
+    ic = db.get(IntegrationConfig, key) if key in ("ollama", "hosted", "garak", "ecommerce") else None
     if ic is None:
         raise HTTPException(status_code=404, detail="Integration not found")
     if key == "ollama":
@@ -67,6 +70,14 @@ async def check_integration(key: str, p: Principal = Depends(require("tests:run"
         models = _models_needed(db, "openai_compatible")
         detail = await OpenAICompatibleProvider().status(models[0] if models else None)
         ic.status = "ok" if detail.get("configured") and detail.get("api_key_present") else "not_configured"
+    elif key == "ecommerce":
+        from app.agents.remote_http import RemoteHTTPAgent
+        s = get_settings()
+        ok, msg = await RemoteHTTPAgent(s.ecommerce_base_url, s.ecommerce_token, 10).check_available()
+        detail = {"base_url": s.ecommerce_base_url, "detail": msg, "token_configured": bool(s.ecommerce_token)}
+        if not ok:
+            detail["error"] = msg
+        ic.status = "ok" if ok else "unreachable"
     else:
         detail = garak_status()
         ic.status = "installed" if detail["installed"] else "not_installed"

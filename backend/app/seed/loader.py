@@ -74,7 +74,7 @@ def seed_all(db: Session) -> dict:
     created["scenarios"] = seed_scenarios(db)
 
     for key, name in (("ollama", "Ollama (local or cloud models)"), ("hosted", "OpenAI-compatible hosted provider"),
-                      ("garak", "garak LLM vulnerability scanner")):
+                      ("garak", "garak LLM vulnerability scanner"), ("ecommerce", "E-commerce agent platform")):
         if db.get(IntegrationConfig, key) is None:
             db.add(IntegrationConfig(key=key, name=name, enabled=key == "ollama", settings={}, status="unchecked", detail={}))
     db.flush()

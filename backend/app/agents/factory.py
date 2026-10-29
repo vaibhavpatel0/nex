@@ -5,6 +5,8 @@ from typing import Any, Dict
 
 from app.agents.base import AgentAdapter, AgentUnavailable
 from app.agents.llm_agent import LLMAgent
+from app.agents.remote_http import RemoteHTTPAgent
+from app.config.settings import get_settings
 from app.agents.simulated import SimulatedAgent
 from app.integrations.ollama.client import OllamaProvider
 from app.integrations.providers.openai_compatible import OpenAICompatibleProvider
@@ -14,6 +16,7 @@ SUPPORTED = {
     ("simulated", "deterministic"),
     ("local_model", "ollama"),
     ("hosted_model", "openai_compatible"),
+    ("remote_agent", "ecommerce_http"),
 }
 
 
@@ -23,6 +26,9 @@ def build_agent(snapshot: Dict[str, Any]) -> AgentAdapter:
         raise AgentUnavailable(f"No adapter is implemented for {kind[0]} / {kind[1]}")
     if kind[0] == "simulated":
         return SimulatedAgent(snapshot.get("behavior") or "naive")
+    if kind[0] == "remote_agent":
+        s = get_settings()
+        return RemoteHTTPAgent(s.ecommerce_base_url, s.ecommerce_token, s.remote_agent_timeout_seconds)
     model = snapshot.get("model_id")
     if not model:
         raise AgentUnavailable("No model identifier configured")

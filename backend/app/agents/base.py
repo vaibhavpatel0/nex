@@ -55,6 +55,12 @@ class AgentTask:
     task: str
     session_subject: Optional[str] = None
     model_fault: Optional[str] = None  # malformed_tool_call | empty_output (test fault injection)
+    # Context used by remote agents (they report their tool calls to SENTINEL under this correlation).
+    correlation_id: Optional[str] = None
+    run_id: Optional[str] = None
+    scenario_key: Optional[str] = None
+    faults: Dict[str, str] = field(default_factory=dict)
+    direct_tool_call: Optional[Dict[str, Any]] = None  # deterministic gateway probe, no model involved
 
 
 @dataclass
@@ -63,6 +69,15 @@ class AgentOutput:
     usage: Optional[Dict[str, Any]] = None  # only when the provider reports it
     steps: int = 0
     calls: List[ToolResult] = field(default_factory=list)
+    # An error the agent itself reported after running (for example a model timeout). Distinct from
+    # AgentUnavailable, which means the agent could not be reached at all.
+    error_kind: Optional[str] = None
+    error: Optional[str] = None
+    # Evidence produced by remote agents running against sandbox fixtures.
+    side_effects: Optional[Dict[str, Any]] = None
+    invoked_tools: Optional[List[str]] = None
+    invariants: Optional[Dict[str, bool]] = None
+    model: Optional[Dict[str, Any]] = None
 
 
 class AgentAdapter(abc.ABC):

@@ -39,7 +39,7 @@ async def events_ws(ws: WebSocket) -> None:
         return
     with db_session() as db:
         principal = resolve_token(db, str(msg.get("token", ""))[:256])
-    if principal is None or not has_permission(principal, "read"):
+    if principal is None or principal.is_service or not has_permission(principal, "read"):
         await ws.send_text(json.dumps({"type": "error", "detail": "unauthorized"}))
         await ws.close(code=4401)
         return

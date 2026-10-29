@@ -26,6 +26,7 @@ def session_history(db: Session, correlation_id: str, exclude_call_id: str) -> L
         HistoryItem(
             tool_name=r.tool_name, operation=r.operation, status=r.status,
             classification=r.result_classification, created_at=r.created_at,
+            flags=tuple(r.flags or ()),
         )
         for r in rows
     ]

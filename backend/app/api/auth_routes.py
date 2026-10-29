@@ -34,7 +34,7 @@ def login(body: LoginIn, request: Request, db: Session = Depends(get_db)):
 
 @router.post("/auth/logout")
 def logout(p: Principal = Depends(current_principal), db: Session = Depends(get_db)):
-    sess = db.get(ApiSession, p.session_id)
+    sess = db.get(ApiSession, p.session_id) if p.session_id else None
     if sess:
         sess.revoked_at = utcnow()
     return {"ok": True}
@@ -42,7 +42,8 @@ def logout(p: Principal = Depends(current_principal), db: Session = Depends(get_
 
 @router.get("/auth/me")
 def me(p: Principal = Depends(current_principal)):
-    return {"id": p.user_id, "username": p.username, "role": p.role, "permissions": sorted(ROLE_PERMISSIONS[p.role])}
+    perms = p.permissions if p.permissions is not None else ROLE_PERMISSIONS.get(p.role, frozenset())
+    return {"id": p.user_id, "username": p.username, "role": p.role, "permissions": sorted(perms)}
 
 
 # ------------------------------------------------------------------ user administration
