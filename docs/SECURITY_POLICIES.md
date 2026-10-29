@@ -62,3 +62,9 @@ tools (`*` globs) and JSON parameters. Example: at most 3 stock lookups per sess
 ```
 
 Every change creates a policy version with author and note; decisions record the policy-set hash that produced them.
+
+## E-commerce policies
+
+SEN-013 (`customer_scope`, shop record tools), SEN-024 (`tainted_session`: after a tool result is flagged
+`suspected_injection`, later write and egress calls need approval), SEN-032 (cancellation and return requests need
+approval), SEN-044 (2 support requests per 5 minutes per session). Details in `docs/ECOMMERCE_INTEGRATION.md`.

@@ -5,7 +5,7 @@ Viewer: read everything. Operator: run tests and sessions, decide approvals, ope
 Admin: everything, plus agents, policies, users, data deletion.
 
 ## Run the first security scenario
-1. Sign in. On an empty install the Overview shows **Run the quick demo** (8 scenarios against *Ops assistant v1 (naive)*).
+1. Sign in. On an empty install the Overview shows **Run the quick suite** (8 scenarios against *Ops assistant v1 (naive)*).
 2. The run page fills in as scenarios finish. Click a row to see its checks and evidence, then **Open trace**.
 3. For a chosen agent and suite, use **Run security tests**: pick a target agent, then a suite or individual
    scenarios (filter by category). Scenarios needing tools the agent lacks are reported as SKIPPED.

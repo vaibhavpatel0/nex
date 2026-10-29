@@ -61,3 +61,24 @@ scenario matchers.
   horizontal scroll.
 - Not run: a live Ollama model (no Ollama in the development environment; the adapter is tested only for
   unavailability), Docker image, PostgreSQL.
+
+## E-commerce integration (recorded 30 Oct 2026, development container)
+- AEGIS `pytest`: **108 passed**, including `tests/integration/test_sentinel_remote.py` (12 tests: service-token
+  scope, strict namespace-bound registration, allowed and blocked flows, refused result reports, fail-closed
+  ownership, staff/unknown/extra-field calls, approval binding to arguments, taint, baseline confinement, session
+  completion, bound evaluation lookups). AEGIS `vitest`: 4 passed.
+- Shop end-to-end (`make shop-test`): **16 passed**, repeated 6 times without a failure. Real AEGIS, real shop and
+  the Ollama-protocol test double run as separate processes.
+  - A legitimate search allowed and answered from catalogue data. B another customer's order blocked before data
+    is returned. C injection in a product description: the injected lookup is blocked and the injected add to
+    cart is held for approval (tainted session). D gateway probes show no side effects. E events persisted,
+    streamed over the WebSocket and replayed after reconnect. F full e-commerce suite through AEGIS: 21 of 21 PASS,
+    block rate 100%, false-positive rate 0%. G baseline against protected: GW-001 to GW-004 FAIL in baseline (the
+    attacks reach the tool) and PASS when protected; compare and replay work.
+  - Also: live store untouched by tests, cancellation approval end to end, SENTINEL down fails closed, model
+    unavailable reported truthfully, Workbench requires staff and customers see only their own events, internal
+    API rejects unknown faults.
+- Shop UI: `vitest` 2 passed; Playwright click-through of storefront, assistant, Workbench (runs, live injection
+  trace, approvals, setup, security tests, policy view) with no console errors; 390 px width has no horizontal
+  scroll.
+- Not run: a real model behind the assistant (see LIMITATIONS).

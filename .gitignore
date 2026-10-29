@@ -18,3 +18,4 @@ ecommerce-agent-platform/data/*
 !ecommerce-agent-platform/data/.gitkeep
 ecommerce-agent-platform/frontend/node_modules/
 ecommerce-agent-platform/frontend/dist/
+*.tsbuildinfo

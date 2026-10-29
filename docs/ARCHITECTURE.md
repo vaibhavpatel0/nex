@@ -66,3 +66,11 @@ Regression comparisons warn when any of these differ.
 
 Set `AEGIS_DATABASE_URL`. The application uses SQLAlchemy Core/ORM only and Alembic migrations with batch mode.
 SQLite-specific code is limited to connection pragmas in `database/base.py`. Not tested on PostgreSQL yet.
+
+## Remote agents (e-commerce platform)
+
+Agents that run in another service use SENTINEL as a remote decision point (`api/sentinel_routes.py` on top of
+`sentinel/decision_point.py`, the same code the in-process gateway uses). The remote service is the enforcement
+point and must execute only on `execute: true`. AEGIS drives remote agents through `agents/remote_http.py`.
+Test runs carry a `mode`: `protected`, or `baseline`, where decisions are recorded with `enforced=false` but not
+enforced, allowed only while a baseline test run is running. See `docs/ECOMMERCE_INTEGRATION.md`.
