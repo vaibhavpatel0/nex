@@ -6,7 +6,7 @@ import logging
 from contextlib import asynccontextmanager
 from pathlib import Path
 
-from fastapi import FastAPI, Request
+from fastapi import Depends, FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse
@@ -20,6 +20,7 @@ from shop.api import agent_api, store as store_api
 from shop.config import PLATFORM_ROOT, VERSION, get_settings
 from shop.db import init_engine, schema_ready, session_scope, utcnow
 from shop.models import AgentRun
+from shop.security import Principal, staff
 
 log = logging.getLogger("shop")
 registration = {"status": "pending", "detail": "not attempted yet", "at": None}
@@ -92,7 +93,7 @@ def create_app() -> FastAPI:
         return {"status": "ok", "version": VERSION, "sentinel_registration": registration["status"]}
 
     @app.get("/api/workbench/registration")
-    def reg():
+    def reg(_: Principal = Depends(staff)):
         return registration
 
     app.include_router(store_api.router, prefix="/api")

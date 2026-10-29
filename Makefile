@@ -3,7 +3,7 @@ PY ?= python3
 VENV := .venv
 BIN := $(VENV)/bin
 
-.PHONY: help setup init dev dev-backend dev-frontend test test-backend test-frontend build serve reset-demo e2e clean
+.PHONY: help setup init dev dev-backend dev-frontend test test-backend test-frontend build serve reset-demo e2e clean link-ecommerce shop-setup shop-init shop-dev shop-test
 
 help:
 	@echo "setup         create .venv, install Python and npm dependencies"
@@ -15,6 +15,11 @@ help:
 	@echo "build         build the UI into frontend/dist (served by the API with 'make serve')"
 	@echo "serve         run the API and the built UI together on http://127.0.0.1:8000"
 	@echo "reset-demo    DELETE data/ and re-initialise (fresh empty install)"
+	@echo "shop-setup    install the e-commerce platform's dependencies"
+	@echo "shop-init     create and seed the e-commerce database"
+	@echo "link-ecommerce  create the SENTINEL service token and internal token, write both .env files"
+	@echo "shop-dev      start the shop API (8100) and storefront/Workbench (5174)"
+	@echo "shop-test     run the e-commerce end-to-end tests"
 
 setup:
 	$(PY) -c 'import sys; assert sys.version_info >= (3, 10), "Python 3.10+ required"'
@@ -59,3 +64,18 @@ e2e:
 
 clean:
 	rm -rf $(VENV) frontend/node_modules frontend/dist .pytest_cache
+
+shop-setup:
+	$(MAKE) -C ecommerce-agent-platform setup
+
+shop-init:
+	$(MAKE) -C ecommerce-agent-platform init
+
+link-ecommerce:
+	$(BIN)/python scripts/link_ecommerce.py
+
+shop-dev:
+	$(MAKE) -C ecommerce-agent-platform dev
+
+shop-test:
+	$(MAKE) -C ecommerce-agent-platform test

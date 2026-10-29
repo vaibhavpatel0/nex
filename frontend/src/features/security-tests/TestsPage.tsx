@@ -3,7 +3,7 @@ import { Link, useNavigate, useParams } from "react-router-dom";
 import { useApp, useLiveEvents } from "../../app/context";
 import { IconPlay, IconRefresh } from "../../components/Icons";
 import {
-  AgentTypeTag, Empty, FormError, Load, ms, OutcomeTok, PageHead, Panel, Pager, pct, RunStatusTok, Sev, Short, Time,
+  AgentTypeTag, Empty, ModeTag, FormError, Load, ms, OutcomeTok, PageHead, Panel, Pager, pct, RunStatusTok, Sev, Short, Time,
 } from "../../components/ui";
 import { useAction, useApi } from "../../hooks/useApi";
 import { api, qs } from "../../services/api";
@@ -20,13 +20,14 @@ function Launcher() {
   const [picked, setPicked] = useState<string[]>([]);
   const [cat, setCat] = useState("");
   const [label, setLabel] = useState("");
+  const [runMode, setRunMode] = useState<"protected" | "baseline">("protected");
   const act = useAction();
   const agent = agents.data?.items.find((a: any) => a.id === agentId) ?? agents.data?.items[0];
   const visible = useMemo(() => (scen.data?.items ?? []).filter((s: any) => !cat || s.category === cat), [scen.data, cat]);
 
   const submit = async (e: FormEvent) => {
     e.preventDefault();
-    const body = mode === "suite" ? { agent_id: agent.id, suite_key: suite, label } : { agent_id: agent.id, scenario_keys: picked, label };
+    const body = mode === "suite" ? { agent_id: agent.id, suite_key: suite, label, mode: runMode } : { agent_id: agent.id, scenario_keys: picked, label, mode: runMode };
     const r = await act.run(() => api.post("/test-runs", body));
     if (r) { toast("Test run started"); nav(`/runs/${r.run_id}`); }
   };
@@ -71,6 +72,12 @@ function Launcher() {
             </div>
           </fieldset>
         )}
+        <fieldset><legend>Enforcement</legend>
+          <label className="check"><input type="radio" name="runmode" checked={runMode === "protected"} onChange={() => setRunMode("protected")} />
+            <span><b>Protected.</b> SENTINEL enforces every decision.</span></label>
+          <label className="check"><input type="radio" name="runmode" checked={runMode === "baseline"} onChange={() => setRunMode("baseline")} />
+            <span><b>Baseline benchmark.</b> SENTINEL records what it would decide but does not enforce, so you can measure the unprotected agent. Allowed only for test runs, which always use sandbox fixtures.</span></label>
+        </fieldset>
         <FormError msg={act.error} />
         <div className="row">
           <button className="btn-primary" disabled={!can("tests:run") || act.busy || (mode === "pick" && !picked.length)}><IconPlay />Start test run</button>
@@ -96,7 +103,7 @@ function RunList() {
                 const c = x.summary?.counts;
                 return (
                   <tr key={x.id}>
-                    <td><Link to={`/runs/${x.id}`}>{x.label || x.id}</Link>{x.replay_of_run_id ? <div className="small dim">Replay</div> : null}</td>
+                    <td><Link to={`/runs/${x.id}`}>{x.label || x.id}</Link> <ModeTag mode={x.mode} />{x.replay_of_run_id ? <div className="small dim">Replay</div> : null}</td>
                     <td className="small"><span className="mono">{x.agent.key}</span></td>
                     <td>{x.status === "running" || x.status === "queued" ? <span className="row"><RunStatusTok s={x.status} /><span className="small">{x.completed_scenarios}/{x.total_scenarios}</span></span> : <RunStatusTok s={x.status} />}</td>
                     <td className="num">{c?.PASS ?? ""}</td><td className="num">{c?.FAIL ?? ""}</td><td className="num">{c ? c.ERROR + c.INCONCLUSIVE + c.SKIPPED : ""}</td>

@@ -152,7 +152,8 @@ function Approvals() {
                     ) : a.status === "approved" ? (
                       <div className="stack" style={{ gap: 4 }}>
                         <span className="small">Approved by {a.decided_by}</span>
-                        {a.resubmittable && can("approvals:decide") ? <button className="btn-sm btn-primary" onClick={() => execute(a.id)}>Execute approved action</button>
+                        {a.tool_name?.startsWith("shop.") ? <span className="small muted">Store action: execute it from the Agent Workbench, which holds the original arguments.</span>
+                          : a.resubmittable && can("approvals:decide") ? <button className="btn-sm btn-primary" onClick={() => execute(a.id)}>Execute approved action</button>
                           : <span className="small muted">Original arguments are no longer in memory. Re-run the agent.</span>}
                       </div>
                     ) : <span className="small">{a.status}{a.decided_by ? ` by ${a.decided_by}` : ""}{a.decision_note ? `: ${a.decision_note}` : ""}</span>}

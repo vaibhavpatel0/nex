@@ -99,14 +99,16 @@ def stack():
     base = {k: v for k, v in os.environ.items() if not k.startswith(("AEGIS_", "SHOP_", "OLLAMA_"))}
     aegis_env = {**base, "AEGIS_DATA_DIR": str(tmp / "aegis"), "AEGIS_ADMIN_PASSWORD": ADMIN_PW,
                  "AEGIS_ECOMMERCE_BASE_URL": urls["shop"], "AEGIS_ECOMMERCE_TOKEN": internal,
-                 "AEGIS_CORS_ORIGINS": "http://localhost:5173"}
+                 "AEGIS_CORS_ORIGINS": "http://localhost:5173", "OLLAMA_API_KEY": "", "AEGIS_DATABASE_URL": ""}
     run([PY, "-m", "app.cli", "init"], AEGIS_BACKEND, aegis_env)
     run([PY, "-m", "app.cli", "create-user", "operator", "operator"], AEGIS_BACKEND, {**aegis_env, "AEGIS_NEW_USER_PASSWORD": OPERATOR_PW})
     svc = run([PY, "-m", "app.cli", "create-service-token", "shop", "--agents", "shop-assistant", "--namespaces", "shop", "--quiet"],
               AEGIS_BACKEND, aegis_env).strip()
     shop_env = {**base, "SHOP_DATA_DIR": str(tmp / "shop"), "SHOP_DEMO_PASSWORD": SHOP_PW, "AEGIS_BASE_URL": urls["aegis"],
                 "AEGIS_API_TOKEN": svc, "SHOP_INTERNAL_TOKEN": internal, "OLLAMA_BASE_URL": urls["double"],
-                "OLLAMA_MODEL": "test-double", "SHOP_MODEL_TIMEOUT_SECONDS": "10"}
+                "OLLAMA_MODEL": "test-double", "SHOP_MODEL_TIMEOUT_SECONDS": "10",
+                # explicit values override anything in a developer's real .env (for example a cloud API key)
+                "OLLAMA_API_KEY": "", "SHOP_DATABASE_URL": "", "SHOP_MODEL_PROVIDER": "ollama", "SHOP_EXPOSE_STAFF_TOOLS_TO_AGENT": "true"}
     run([PY, "-m", "shop.cli", "init"], SHOP_BACKEND, shop_env)
     st = Stack(aegis=urls["aegis"], shop=urls["shop"], double=urls["double"], tmp=tmp,
                envs={"aegis": aegis_env, "shop": shop_env, "double": base}, procs={})

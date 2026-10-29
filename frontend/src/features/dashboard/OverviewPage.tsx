@@ -18,7 +18,7 @@ function FirstRun({ onStarted }: { onStarted: (id: string) => void }) {
     try {
       const agents = await api.get("/agents");
       const naive = agents.items.find((a: any) => a.key === "ops-naive");
-      const r = await api.post("/test-runs", { agent_id: naive.id, suite_key: "quick-demo", label: "First demo: naive agent" });
+      const r = await api.post("/test-runs", { agent_id: naive.id, suite_key: "quick-demo", label: "First run: naive agent, quick suite" });
       toast("Demo run started");
       onStarted(r.run_id);
     } catch (e) {
@@ -35,16 +35,16 @@ function FirstRun({ onStarted }: { onStarted: (id: string) => void }) {
           so there is nothing to show until something runs.
         </p>
         <ol style={{ margin: 0, paddingLeft: 20 }}>
-          <li>Run the quick demo: 8 scenarios against the simulated <b>Ops assistant v1 (naive)</b> agent. It takes a few seconds.</li>
+          <li>Run the quick suite: 8 real scenarios against the rule-based <b>Ops assistant v1 (naive)</b> agent. It takes a few seconds and every result is recorded.</li>
           <li>Open the run to see which attacks the agent attempted and which ones SENTINEL stopped.</li>
           <li>Run the same suite against <b>v2 (guarded)</b> and compare the two runs in an investigation.</li>
         </ol>
-        <p className="small muted">All demo targets are local sandbox fixtures. No external system is contacted.</p>
+        <p className="small muted">All scenario targets are local sandbox fixtures. No external system is contacted.</p>
         <div className="row">
           {can("tests:run") ? (
-            <button className="btn-primary" disabled={busy} onClick={start}><IconPlay />Run the quick demo</button>
+            <button className="btn-primary" disabled={busy} onClick={start}><IconPlay />Run the quick suite</button>
           ) : (
-            <span className="muted">Your role is read-only. Ask an operator to run the demo.</span>
+            <span className="muted">Your role is read-only. Ask an operator to start a test run.</span>
           )}
           <Link to="/runtime" className="btn">Try runtime protection</Link>
         </div>
@@ -72,10 +72,10 @@ export function OverviewPage() {
             <>
               {d.empty ? <FirstRun onStarted={(id) => nav(`/runs/${id}`)} /> : null}
               <div className="strip" role="group" aria-label="Enforcement totals">
-                <div><div className="v">{d.decisions.all_time.ALLOW}</div><div className="l">Allowed tool calls</div><div className="s">{d.decisions.last_24h.ALLOW} in the last 24 hours</div></div>
-                <div><div className="v">{d.decisions.all_time.BLOCK}</div><div className="l">Blocked before execution</div><div className="s">{d.decisions.last_24h.BLOCK} in the last 24 hours</div></div>
+                <div><div className="v">{d.decisions.all_time.ALLOW}</div><div className="l">Allowed tool calls</div><div className="s">{d.decisions_live.ALLOW} live, {d.decisions.all_time.ALLOW - d.decisions_live.ALLOW} in tests; {d.decisions.last_24h.ALLOW} in 24 h</div></div>
+                <div><div className="v">{d.decisions.all_time.BLOCK}</div><div className="l">Blocked before execution</div><div className="s">{d.decisions_live.BLOCK} live, {d.decisions.all_time.BLOCK - d.decisions_live.BLOCK} in tests; {d.decisions.last_24h.BLOCK} in 24 h</div></div>
                 <div><div className="v">{d.decisions.all_time.REQUIRE_APPROVAL}</div><div className="l">Held for approval</div><div className="s">{d.pending_approvals.length} waiting now</div></div>
-                <div><div className="v">{d.tool_calls.executed}</div><div className="l">Tool executions</div><div className="s">{d.tool_calls.failed} failed upstream or timed out</div></div>
+                <div><div className="v">{d.tool_calls.executed}</div><div className="l">Tool executions</div><div className="s">{d.tool_calls.executed_live} live, {d.tool_calls.executed - d.tool_calls.executed_live} in test sandboxes; {d.tool_calls.failed} failed</div></div>
                 <div><div className="v">{d.active_runs.length}</div><div className="l">Test runs in progress</div><div className="s">{d.recent_runs.length ? "Latest shown below" : "None yet"}</div></div>
               </div>
 

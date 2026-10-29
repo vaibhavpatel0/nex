@@ -24,7 +24,7 @@ export function IntegrationsPage() {
           const by = Object.fromEntries(d.items.map((i: any) => [i.key, i]));
           const tok = (k: string) => { const [c, l] = STATUS[by[k]?.status ?? "unchecked"] ?? ["tok-neutral", by[k]?.status]; return <span className={`tok ${c}`}>{l}</span>; };
           const btn = (k: string) => can("tests:run") ? <button className="btn-sm" onClick={() => check(k)}><IconRefresh />Check now</button> : null;
-          const o = by.ollama, h = by.hosted, g = by.garak;
+          const o = by.ollama, h = by.hosted, g = by.garak, ec = by.ecommerce;
           return (
             <div className="stack">
               <Panel title="Ollama (local or cloud models)" actions={<>{tok("ollama")}{btn("ollama")}</>}>
@@ -51,6 +51,16 @@ export function IntegrationsPage() {
                     </ol>
                   </div>
                 </div>
+              </Panel>
+              <Panel title="E-commerce agent platform (Halden Bazaar)" actions={<>{tok("ecommerce")}{btn("ecommerce")}</>}>
+                <dl className="kv small">
+                  <dt>Shop API</dt><dd className="mono">{ec?.config?.base_url}</dd>
+                  <dt>Internal token</dt><dd className="mono">{ec?.config?.token_env}{ec?.config?.token_configured ? ", set" : ", not set (run make link-ecommerce)"}</dd>
+                  <dt>Last check</dt><dd><Time iso={ec?.last_checked_at} /></dd>
+                  {ec?.detail?.error ? <><dt>Error</dt><dd>{ec.detail.error}</dd></> : null}
+                  <dt>Agent Workbench</dt><dd><a href={`${ec?.config?.ui_url}/workbench`} target="_blank" rel="noreferrer">{ec?.config?.ui_url}/workbench</a></dd>
+                </dl>
+                <p className="small muted" style={{ marginTop: 6 }}>The shopping agent runs in the e-commerce backend and asks SENTINEL here before every tool call. Test runs against agent <span className="mono">shop-assistant</span> execute in sandbox copies of the store; they return ERROR while the shop backend is down.</p>
               </Panel>
               <Panel title="Hosted provider (OpenAI-compatible)" actions={<>{tok("hosted")}{btn("hosted")}</>}>
                 <dl className="kv small">

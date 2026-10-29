@@ -52,7 +52,7 @@ export function ConnTok({ state }: { state: string }) {
 }
 
 export function AgentTypeTag({ t }: { t: string }) {
-  const label = { simulated: "Simulated", local_model: "Local model", hosted_model: "External hosted" }[t] ?? t;
+  const label = { simulated: "Simulated", local_model: "Local model", hosted_model: "External hosted", remote_agent: "Remote agent (e-commerce platform)" }[t] ?? t;
   return <span className="tag">{label}</span>;
 }
 
@@ -178,4 +178,9 @@ export function Expandable({ summary, children }: { summary: ReactNode; children
 
 export function FormError({ msg }: { msg: string | null }) {
   return msg ? <div className="notice notice-bad" role="alert">{msg}</div> : null;
+}
+
+export function ModeTag({ mode }: { mode?: string | null }) {
+  if (mode === "baseline") return <span className="tok tok-warn" title="SENTINEL recorded decisions but did not enforce them (sandbox only)">Baseline, not enforced</span>;
+  return <span className="tok tok-info">Protected</span>;
 }

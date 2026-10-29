@@ -57,6 +57,7 @@ export function TraceSpine({ t }: { t: any }) {
             <span className="small muted">Attempted, then</span>
             <DecisionTok d={c.decision} />
             <CallStatusTok s={c.status} />
+            {c.enforced === false ? <span className="tok tok-warn" title="Baseline run: SENTINEL recorded this decision but did not enforce it">Not enforced (baseline)</span> : null}
           </div>
           <div className="small" style={{ marginTop: 2 }}>
             {d?.matched_policy_key ? <><span className="mono">{d.matched_policy_key}</span>: </> : null}{d?.reason ?? "No decision recorded"}

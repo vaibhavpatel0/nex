@@ -186,9 +186,11 @@ def start_chat(customer_id: str, message: str, conversation_id: Optional[str], s
         text = outcome.get("final_text")
         notice = None
         if outcome.get("error_kind"):
-            notice = {"model_timeout": "The assistant's model did not respond in time. Nothing was changed. Please try again.",
-                      "model_unavailable": "The assistant's model is not available right now. Nothing was changed.",
-                      }.get(outcome["error_kind"], "The assistant could not complete this request. Nothing was changed.")
+            notice = {"model_timeout": "The assistant's model did not respond in time. Please try again.",
+                      "model_unavailable": "The assistant's model is not available right now.",
+                      }.get(outcome["error_kind"], "The assistant could not complete this request.")
+            # Only claim nothing changed when no tool actually ran in this run.
+            notice += " No action was taken." if not ctx.invoked else " Some steps ran before the error; check your cart and orders."
         elif not (text or "").strip():
             notice = "The assistant returned no answer for this message."
         with session_scope() as db:

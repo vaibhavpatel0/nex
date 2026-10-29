@@ -237,7 +237,11 @@ def overview(p: Principal = Depends(require("read")), db: Session = Depends(get_
     dec = dict(db.execute(select(PolicyDecision.decision, func.count()).group_by(PolicyDecision.decision)).all())
     dec24 = dict(db.execute(select(PolicyDecision.decision, func.count()).where(PolicyDecision.created_at >= since)
                             .group_by(PolicyDecision.decision)).all())
+    # Live traffic (runtime sessions, including the e-commerce assistant) has no test run; test traffic does.
+    live_dec = dict(db.execute(select(PolicyDecision.decision, func.count()).where(PolicyDecision.run_id.is_(None))
+                               .group_by(PolicyDecision.decision)).all())
     executed = db.execute(select(func.count(ToolCall.id)).where(ToolCall.status == "executed")).scalar_one()
+    live_executed = db.execute(select(func.count(ToolCall.id)).where(ToolCall.status == "executed", ToolCall.run_id.is_(None))).scalar_one()
     failed = db.execute(select(func.count(ToolCall.id)).where(ToolCall.status == "failed")).scalar_one()
     pending = db.execute(select(ApprovalRequest).where(ApprovalRequest.status == "pending")
                          .order_by(ApprovalRequest.created_at.desc()).limit(10)).scalars().all()
@@ -258,7 +262,8 @@ def overview(p: Principal = Depends(require("read")), db: Session = Depends(get_
         "empty": total_runs == 0 and total_calls == 0,
         "decisions": {"all_time": {k: dec.get(k, 0) for k in ("ALLOW", "BLOCK", "REQUIRE_APPROVAL")},
                       "last_24h": {k: dec24.get(k, 0) for k in ("ALLOW", "BLOCK", "REQUIRE_APPROVAL")}},
-        "tool_calls": {"executed": executed, "failed": failed},
+        "decisions_live": {k: live_dec.get(k, 0) for k in ("ALLOW", "BLOCK", "REQUIRE_APPROVAL")},
+        "tool_calls": {"executed": executed, "failed": failed, "executed_live": live_executed},
         "pending_approvals": [approval_out(a) for a in pending],
         "active_runs": [{"id": r.id, "label": r.label, "status": r.status, "completed": r.completed_scenarios,
                          "total": r.total_scenarios, "agent_key": r.agent_snapshot.get("key")} for r in active],
