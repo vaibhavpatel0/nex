@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from app.database.base import CommitBeforeResponseRoute
+
 from typing import List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -16,7 +18,7 @@ from app.security.authentication import Principal
 from app.security.authorization import require
 from app.seed.loader import agent_config_dict
 
-router = APIRouter(tags=["agents"])
+router = APIRouter(route_class=CommitBeforeResponseRoute, tags=["agents"])
 
 TYPES = {"simulated": "deterministic", "local_model": "ollama", "hosted_model": "openai_compatible"}
 

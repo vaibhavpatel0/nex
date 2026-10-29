@@ -27,7 +27,7 @@ describe("LiveClient", () => {
     c.start();
     await vi.advanceTimersByTimeAsync(1);
     const first = FakeWS.last!;
-    expect(JSON.parse(first.sent[0])).toEqual({ type: "auth", token: "tok", since_seq: 0 });
+    expect(JSON.parse(first.sent[0])).toEqual({ type: "auth", token: "tok", since_seq: null });
     first.emit({ type: "ready", latest_seq: 10 });
     first.emit({ type: "event", event: ev(11) });
     first.emit({ type: "event", event: ev(11) });

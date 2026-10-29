@@ -7,6 +7,11 @@ without changing the application code (see docs/ARCHITECTURE.md).
 from __future__ import annotations
 
 from contextlib import contextmanager
+from contextvars import ContextVar
+from typing import List
+
+from fastapi.routing import APIRoute
+from starlette.concurrency import run_in_threadpool
 from typing import Iterator, Optional
 
 from sqlalchemy import create_engine, event, inspect
@@ -59,6 +64,7 @@ def session_factory() -> sessionmaker:
 @contextmanager
 def db_session() -> Iterator[Session]:
     session: Session = session_factory()()
+    _track(session)
     try:
         yield session
         session.commit()
@@ -72,6 +78,7 @@ def db_session() -> Iterator[Session]:
 def get_db() -> Iterator[Session]:
     """FastAPI dependency yielding a request-scoped session."""
     session: Session = session_factory()()
+    _track(session)
     try:
         yield session
         session.commit()
@@ -86,3 +93,35 @@ def schema_is_current() -> bool:
     """Return True when the migration-managed tables exist."""
     insp = inspect(get_engine())
     return insp.has_table("alembic_version") and insp.has_table("agents")
+
+
+# --- commit before the response leaves -------------------------------------------------------------
+# FastAPI may run the teardown of `yield` dependencies after the response has been sent. A client
+# could then use a token or read a record before its transaction is committed (a real race seen in
+# tests). Routes built with CommitBeforeResponseRoute commit the request's sessions first.
+_request_sessions: "ContextVar[Optional[List[Session]]]" = ContextVar("request_sessions", default=None)
+
+
+def _track(session: Session) -> None:
+    pending = _request_sessions.get()
+    if pending is not None:
+        pending.append(session)
+
+
+class CommitBeforeResponseRoute(APIRoute):
+    def get_route_handler(self):  # type: ignore[override]
+        handler = super().get_route_handler()
+
+        async def wrapped(request):
+            pending: List[Session] = []
+            token = _request_sessions.set(pending)
+            try:
+                response = await handler(request)
+                for s in pending:
+                    if s.is_active:
+                        await run_in_threadpool(s.commit)
+                return response
+            finally:
+                _request_sessions.reset(token)
+
+        return wrapped

@@ -14,3 +14,7 @@ e2e-screenshots/
 *.db-wal
 *.db-shm
 .DS_Store
+ecommerce-agent-platform/data/*
+!ecommerce-agent-platform/data/.gitkeep
+ecommerce-agent-platform/frontend/node_modules/
+ecommerce-agent-platform/frontend/dist/

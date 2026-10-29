@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from app.database.base import CommitBeforeResponseRoute
+
 from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel, Field
 from sqlalchemy import select
@@ -12,7 +14,7 @@ from app.models import ApiSession, User
 from app.security.authentication import Principal, authenticate, create_session, current_principal, hash_password
 from app.security.authorization import ROLE_PERMISSIONS, require
 
-router = APIRouter(tags=["auth"])
+router = APIRouter(route_class=CommitBeforeResponseRoute, tags=["auth"])
 
 
 class LoginIn(BaseModel):

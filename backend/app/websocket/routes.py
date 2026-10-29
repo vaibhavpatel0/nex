@@ -43,17 +43,19 @@ async def events_ws(ws: WebSocket) -> None:
         await ws.send_text(json.dumps({"type": "error", "detail": "unauthorized"}))
         await ws.close(code=4401)
         return
+    # since_seq omitted -> live events only; a number (including 0) -> replay everything after it.
+    raw_since = msg.get("since_seq")
     try:
-        since = max(0, int(msg.get("since_seq") or 0))
+        since = None if raw_since is None else max(0, int(raw_since))
     except (TypeError, ValueError):
-        since = 0
+        since = None
 
     sub = event_bus.subscribe()  # subscribe before replay so nothing falls in the gap
     try:
         latest = event_bus.latest_seq()
         await ws.send_text(json.dumps({"type": "ready", "latest_seq": latest}))
-        sent_max = since
-        if since and since < latest:
+        sent_max = latest if since is None else since
+        if since is not None and since < latest:
             missed = event_bus.replay(since, REPLAY_LIMIT + 1)
             if len(missed) > REPLAY_LIMIT:
                 await ws.send_text(json.dumps({"type": "replay_truncated"}))
@@ -61,8 +63,6 @@ async def events_ws(ws: WebSocket) -> None:
             for ev in missed:
                 await ws.send_text(json.dumps({"type": "event", "event": ev, "replayed": True}))
                 sent_max = max(sent_max, ev["seq"])
-        elif not since:
-            sent_max = latest
 
         async def reader() -> None:
             while True:

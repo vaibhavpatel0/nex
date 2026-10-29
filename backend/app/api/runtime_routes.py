@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from app.database.base import CommitBeforeResponseRoute
+
 from datetime import datetime, timedelta
 from typing import Any, Dict, Optional
 
@@ -21,7 +23,7 @@ from app.sentinel.approval import ApprovalService, approval_service
 from app.services import runtime_service
 from app.websocket.event_bus import event_bus, event_to_dict
 
-router = APIRouter(tags=["runtime"])
+router = APIRouter(route_class=CommitBeforeResponseRoute, tags=["runtime"])
 
 
 def _parse_time(v: Optional[str]) -> Optional[datetime]:

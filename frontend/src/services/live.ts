@@ -68,7 +68,8 @@ export class LiveClient {
     const proto = location.protocol === "https:" ? "wss" : "ws";
     const ws = new WebSocket(`${proto}://${location.host}/api/v1/ws`);
     this.ws = ws;
-    ws.onopen = () => ws.send(JSON.stringify({ type: "auth", token, since_seq: this.lastSeq }));
+    // since_seq: null on the first connection (live only); afterwards the last processed seq (replay).
+    ws.onopen = () => ws.send(JSON.stringify({ type: "auth", token, since_seq: this.lastSeq || null }));
     ws.onmessage = (m) => {
       let msg: any;
       try {

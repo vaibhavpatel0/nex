@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from app.database.base import CommitBeforeResponseRoute
+
 from datetime import timedelta
 from typing import Optional
 
@@ -21,7 +23,7 @@ from app.security.authentication import Principal
 from app.security.authorization import require
 from app.websocket.event_bus import event_bus
 
-router = APIRouter(tags=["system"])
+router = APIRouter(route_class=CommitBeforeResponseRoute, tags=["system"])
 
 
 @router.get("/health")

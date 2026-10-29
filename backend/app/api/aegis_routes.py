@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from app.database.base import CommitBeforeResponseRoute
+
 from typing import Any, Dict, List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query
@@ -23,7 +25,7 @@ from app.models import (
 from app.security.authentication import Principal
 from app.security.authorization import require
 
-router = APIRouter(tags=["aegis"])
+router = APIRouter(route_class=CommitBeforeResponseRoute, tags=["aegis"])
 
 
 # ------------------------------------------------------------------ suites & scenarios
@@ -122,6 +124,7 @@ class RunIn(BaseModel):
     suite_key: Optional[str] = Field(default=None, max_length=64)
     scenario_keys: Optional[List[str]] = Field(default=None, max_length=200)
     label: str = Field(default="", max_length=160)
+    mode: str = Field(default="protected", pattern=r"^(protected|baseline)$")
 
 
 def run_out(r: TestRun) -> dict:
@@ -140,7 +143,8 @@ def _start(db_body: RunIn, who: str, replay_of: Optional[str] = None) -> str:
         raise HTTPException(status_code=422, detail="Choose a suite or at least one scenario")
     try:
         run_id = runner.create_run(agent_id=db_body.agent_id, suite_key=db_body.suite_key, scenario_keys=db_body.scenario_keys,
-                                   label=db_body.label or "Security test run", triggered_by=who, replay_of=replay_of)
+                                   label=db_body.label or "Security test run", triggered_by=who, replay_of=replay_of,
+                                   mode=db_body.mode)
     except LookupError as exc:
         raise HTTPException(status_code=404, detail=str(exc))
     except ValueError as exc:
@@ -165,7 +169,8 @@ async def replay_run(run_id: str, body: ReplayIn, p: Principal = Depends(require
     src = get_or_404(db, TestRun, run_id, "Run")
     agent_id = body.agent_id or src.agent_id
     label = body.label or f"Replay of {src.label or src.id}"
-    new = _start(RunIn(agent_id=agent_id, scenario_keys=list(src.scenario_keys), label=label), p.username, replay_of=src.id)
+    new = _start(RunIn(agent_id=agent_id, scenario_keys=list(src.scenario_keys), label=label, mode=src.mode), p.username,
+                 replay_of=src.id)
     return {"run_id": new, "status": "queued", "replay_of": src.id}
 
 

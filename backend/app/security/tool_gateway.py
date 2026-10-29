@@ -136,10 +136,10 @@ class ToolGateway:
         if impl is None or args_obj is None:
             # Only reachable in a baseline run: nothing executable exists for an unknown tool or invalid
             # arguments, so record an honest failure instead of pretending it ran.
-            record_result(tool_call_id=out.tool_call_id, succeeded=False, error_class="tool_error",
+            record_result(tool_call_id=out.tool_call_id, succeeded=False, error_class="rejected_before_execution",
                           error_message="No executable tool for this request",
                           total_latency_ms=(time.perf_counter() - out.started_perf) * 1000, exec_latency_ms=0)
-            return GatewayResult(status="failed", error_class="tool_error", error_message="No executable tool for this request",
+            return GatewayResult(status="failed", error_class="rejected_before_execution", error_message="No executable tool for this request",
                                  latency_ms=(time.perf_counter() - out.started_perf) * 1000, **base)
 
         # ---------------------------------------------------------------- execute

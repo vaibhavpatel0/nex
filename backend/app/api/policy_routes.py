@@ -1,6 +1,8 @@
 """Policy administration. Every change creates a new policy version with author and note."""
 from __future__ import annotations
 
+from app.database.base import CommitBeforeResponseRoute
+
 from typing import Any, Dict, List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -19,7 +21,7 @@ from app.security.policy_engine import RULES, compute_policy_hash
 from app.seed.loader import policy_snapshot_dict
 from app.websocket.event_bus import event_bus
 
-router = APIRouter(tags=["policies"])
+router = APIRouter(route_class=CommitBeforeResponseRoute, tags=["policies"])
 
 RULE_DOCS = {
     "unknown_tool": "Triggers when the requested tool is not registered.",

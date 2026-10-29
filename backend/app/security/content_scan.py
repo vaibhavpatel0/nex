@@ -19,7 +19,7 @@ _PATTERNS = [
     re.compile(r"\b(?:ai|assistant|agent|chatbot)\s+(?:instruction|directive)s?\s*:", re.I),
     re.compile(r"\byou\s+are\s+now\b", re.I),
     re.compile(r"\b(?:maintenance|developer|debug)\s+mode\b", re.I),
-    re.compile(r"\bdo\s+not\s+(?:tell|mention|inform|reveal\s+this\s+to)\s+(?:the\s+)?(?:user|customer)\b", re.I),
+    re.compile(r"\bdo\s+not\s+(?:tell|mention|inform|reveal)\b[^.\n]{0,40}\b(?:user|customer)s?\b", re.I),
     re.compile(r"<!--[^>]{0,400}\b(?:assistant|ai|call|send|read|issue|refund|ignore)\b", re.I | re.S),
     re.compile(r"^\s*(?:assistant|system)\s*:", re.I | re.M),
 ]
@@ -27,11 +27,18 @@ _PATTERNS = [
 FLAG = "suspected_injection"
 
 
+def _normalise(text: str) -> str:
+    # Tool results usually arrive JSON-encoded: un-escape line breaks and quotes so that word boundaries
+    # and line anchors behave as they do in the original text (a missed "\\nNote for AI..." was a real bug).
+    return (text.replace("\\r\\n", "\n").replace("\\n", "\n").replace("\\t", " ").replace('\\"', '"')
+            .replace("\\u003c", "<").replace("\\u003e", ">"))
+
+
 def scan_for_instructions(text: str) -> List[str]:
     """Return the list of pattern indexes that matched (empty when clean)."""
     if not text:
         return []
-    sample = text[:20000]
+    sample = _normalise(text[:20000])
     return [str(i) for i, p in enumerate(_PATTERNS) if p.search(sample)]
 
 

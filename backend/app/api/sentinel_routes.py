@@ -17,6 +17,8 @@ Service tokens are bound to agent keys and tool namespaces.
 """
 from __future__ import annotations
 
+from app.database.base import CommitBeforeResponseRoute
+
 import json
 from typing import Any, Dict, List, Literal, Optional
 
@@ -36,7 +38,7 @@ from app.security.redaction import redact_text, redact_value
 from app.sentinel.decision_point import decide, record_result, remote_meta, validate_with_schema
 from app.websocket.event_bus import event_bus
 
-router = APIRouter(prefix="/sentinel", tags=["sentinel"])
+router = APIRouter(route_class=CommitBeforeResponseRoute, prefix="/sentinel", tags=["sentinel"])
 
 CID = r"^cor_[a-f0-9]{20}$"
 TOOL_NAME = r"^[a-z][a-z0-9_]{1,23}\.[a-z][a-z0-9_]{1,40}$"

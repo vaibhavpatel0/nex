@@ -38,6 +38,9 @@ def compare_runs(db: Session, baseline_id: str, candidate_id: str) -> Dict[str, 
     version_diff = [k for k in common if ra[k].scenario_version != rb[k].scenario_version]
     if version_diff:
         warnings.append("Scenario definitions changed between runs: " + ", ".join(version_diff))
+    if a.mode != b.mode:
+        warnings.append(f"Comparing a {a.mode} run with a {b.mode} run: in a baseline run SENTINEL records decisions but does "
+                        "not enforce them, so differences show the effect of enforcement, not of the agent.")
     if a.policy_hash != b.policy_hash:
         warnings.append("The SENTINEL policy set differs between runs, so differences may come from policy changes rather than the agent.")
     if a.software_version != b.software_version:
@@ -68,9 +71,9 @@ def compare_runs(db: Session, baseline_id: str, candidate_id: str) -> Dict[str, 
             delta = vb["value"] - va["value"]
         metric_rows.append({"metric": name, "baseline": va, "candidate": vb, "delta": delta})
     return {
-        "baseline": {"id": a.id, "label": a.label, "agent": a.agent_snapshot.get("key"), "agent_revision": a.agent_revision,
+        "baseline": {"id": a.id, "label": a.label, "mode": a.mode, "agent": a.agent_snapshot.get("key"), "agent_revision": a.agent_revision,
                      "policy_hash": a.policy_hash[:12], "software_version": a.software_version},
-        "candidate": {"id": b.id, "label": b.label, "agent": b.agent_snapshot.get("key"), "agent_revision": b.agent_revision,
+        "candidate": {"id": b.id, "label": b.label, "mode": b.mode, "agent": b.agent_snapshot.get("key"), "agent_revision": b.agent_revision,
                       "policy_hash": b.policy_hash[:12], "software_version": b.software_version},
         "shared_scenarios": len(common),
         "scenarios": rows,
