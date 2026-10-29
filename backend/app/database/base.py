@@ -1,0 +1,88 @@
+"""Database engine and session management.
+
+SQLite is used for the local prototype. All access goes through SQLAlchemy 2.0
+ORM sessions and Alembic migrations, so a PostgreSQL URL can be configured later
+without changing the application code (see docs/ARCHITECTURE.md).
+"""
+from __future__ import annotations
+
+from contextlib import contextmanager
+from typing import Iterator, Optional
+
+from sqlalchemy import create_engine, event, inspect
+from sqlalchemy.engine import Engine
+from sqlalchemy.orm import DeclarativeBase, Session, sessionmaker
+
+
+class Base(DeclarativeBase):
+    pass
+
+
+_engine: Optional[Engine] = None
+_SessionLocal: Optional[sessionmaker] = None
+
+
+def _sqlite_pragmas(dbapi_connection, _record):  # type: ignore[no-untyped-def]
+    cursor = dbapi_connection.cursor()
+    cursor.execute("PRAGMA foreign_keys=ON")
+    cursor.execute("PRAGMA journal_mode=WAL")
+    cursor.execute("PRAGMA busy_timeout=5000")
+    cursor.close()
+
+
+def init_engine(url: str) -> Engine:
+    global _engine, _SessionLocal
+    if _engine is not None:
+        _engine.dispose()
+    kwargs = {"future": True, "pool_pre_ping": True}
+    if url.startswith("sqlite"):
+        kwargs["connect_args"] = {"check_same_thread": False, "timeout": 15}
+    _engine = create_engine(url, **kwargs)
+    if url.startswith("sqlite"):
+        event.listen(_engine, "connect", _sqlite_pragmas)
+    _SessionLocal = sessionmaker(bind=_engine, expire_on_commit=False, autoflush=False)
+    return _engine
+
+
+def get_engine() -> Engine:
+    if _engine is None:
+        raise RuntimeError("Database engine is not initialised")
+    return _engine
+
+
+def session_factory() -> sessionmaker:
+    if _SessionLocal is None:
+        raise RuntimeError("Database engine is not initialised")
+    return _SessionLocal
+
+
+@contextmanager
+def db_session() -> Iterator[Session]:
+    session: Session = session_factory()()
+    try:
+        yield session
+        session.commit()
+    except Exception:
+        session.rollback()
+        raise
+    finally:
+        session.close()
+
+
+def get_db() -> Iterator[Session]:
+    """FastAPI dependency yielding a request-scoped session."""
+    session: Session = session_factory()()
+    try:
+        yield session
+        session.commit()
+    except Exception:
+        session.rollback()
+        raise
+    finally:
+        session.close()
+
+
+def schema_is_current() -> bool:
+    """Return True when the migration-managed tables exist."""
+    insp = inspect(get_engine())
+    return insp.has_table("alembic_version") and insp.has_table("agents")

@@ -1,0 +1,18 @@
+# Optional. NOT VERIFIED in the development environment. Publishes only on localhost.
+services:
+  aegis:
+    build: .
+    ports:
+      - "127.0.0.1:8000:8000"
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      AEGIS_DATA_DIR: /app/data
+      AEGIS_CORS_ORIGINS: http://127.0.0.1:8000,http://localhost:8000
+      # Reach an Ollama server running on the Mac host:
+      OLLAMA_BASE_URL: http://host.docker.internal:11434
+    volumes:
+      - aegis-data:/app/data
+volumes:
+  aegis-data:

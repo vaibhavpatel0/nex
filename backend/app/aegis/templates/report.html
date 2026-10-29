@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{ d.title }}</title>
+<style>
+  :root { --bg:#f3f2ee; --surface:#fbfaf7; --ink:#1d232a; --muted:#5b6570; --line:#d6d3cb;
+          --pass:#2f6b4f; --fail:#a3322a; --warn:#8a5a00; --info:#2b5f75; }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:var(--ink);
+         font: 14px/1.5 "IBM Plex Sans", "Source Sans 3", "Segoe UI", system-ui, sans-serif; }
+  main { max-width: 1040px; margin: 0 auto; padding: 32px 24px 64px; }
+  h1 { font-size: 22px; margin: 0 0 4px; } h2 { font-size: 16px; margin: 32px 0 8px; border-bottom:1px solid var(--line); padding-bottom:4px; }
+  h3 { font-size: 14px; margin: 16px 0 4px; }
+  .meta { color: var(--muted); font-size: 12px; }
+  .mono { font-family: "IBM Plex Mono", ui-monospace, Menlo, monospace; font-size: 12px; }
+  table { width:100%; border-collapse: collapse; background: var(--surface); border:1px solid var(--line); margin: 8px 0; }
+  th, td { text-align:left; padding: 6px 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { font-size: 12px; color: var(--muted); font-weight: 600; background:#efede7; }
+  .badge { display:inline-block; padding: 0 6px; border:1px solid currentColor; border-radius: 3px; font-size: 11px; font-weight: 600; letter-spacing: .02em; }
+  .PASS { color: var(--pass);} .FAIL { color: var(--fail);} .ERROR { color: var(--fail);} .INCONCLUSIVE { color: var(--warn);} .SKIPPED { color: var(--muted);}
+  .grid { display:grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 8px; }
+  .kv { background: var(--surface); border:1px solid var(--line); padding: 8px 10px; }
+  .kv b { display:block; font-size:11px; color:var(--muted); font-weight:600; }
+  .check-ok::before { content:"Passed: "; color: var(--pass); font-weight:600; }
+  .check-bad::before { content:"Failed: "; color: var(--fail); font-weight:600; }
+  ul { padding-left: 20px; }
+  .notice { border:1px solid var(--line); background: var(--surface); padding: 8px 12px; }
+  @media print { body { background:#fff; } main { padding: 0; } table, .kv { break-inside: avoid; } }
+</style>
+</head>
+<body>
+<main>
+  <p class="meta">AEGIS AI + SENTINEL security evaluation report{% if d.investigation %} · Investigation {{ d.investigation.key }}{% endif %}</p>
+  <h1>{{ d.title }}</h1>
+  <p class="meta">Generated {{ d.generated_at }} (UTC) · Platform {{ d.software_version }} · Data hash <span class="mono">{{ data_hash[:16] }}</span></p>
+
+  <div class="notice">This report is generated from records stored by the platform. It covers {{ d.run.total_scenarios }} scenario(s) run against local sandbox fixtures. It does not establish that the agent is secure in general.</div>
+
+  <h2>Summary</h2>
+  <div class="grid">
+    {% for k, v in d.counts.items() %}<div class="kv"><b>{{ k }}</b><span class="{{ k }}">{{ v }}</span></div>{% endfor %}
+  </div>
+
+  <h2>Configuration</h2>
+  <div class="grid">
+    <div class="kv"><b>Agent</b>{{ d.agent.name }} <span class="mono">({{ d.agent.key }}, revision {{ d.agent.revision }})</span></div>
+    <div class="kv"><b>Agent type</b>{{ d.agent.type }} / {{ d.agent.provider }}{% if d.agent.model %} / {{ d.agent.model }}{% endif %}{% if d.agent.behavior %} / {{ d.agent.behavior }}{% endif %}</div>
+    <div class="kv"><b>Permission profile</b>{{ d.agent.profile }}</div>
+    <div class="kv"><b>Test suite</b>{{ d.run.suite }}</div>
+    <div class="kv"><b>Run</b><span class="mono">{{ d.run.id }}</span></div>
+    <div class="kv"><b>Window (UTC)</b>{{ d.run.started_at }} to {{ d.run.finished_at }}</div>
+    <div class="kv"><b>Policy set hash</b><span class="mono">{{ d.policy.hash }}</span></div>
+    <div class="kv"><b>Tools enabled</b>{{ d.agent.tools | join(", ") }}</div>
+  </div>
+
+  <h2>Metrics</h2>
+  <table><thead><tr><th>Metric</th><th>Value</th><th>Sample</th><th>Formula</th></tr></thead><tbody>
+  {% for m in d.metrics %}<tr><td class="mono">{{ m.metric }}</td><td>{{ m.display }}</td><td>{{ m.sample_size }}</td><td>{{ m.formula }}</td></tr>{% endfor %}
+  </tbody></table>
+
+  <h2>Findings</h2>
+  {% if d.findings %}
+  <table><thead><tr><th>Severity</th><th>Status</th><th>Finding</th><th>Remediation</th></tr></thead><tbody>
+  {% for f in d.findings %}<tr><td>{{ f.severity }}</td><td>{{ f.status }}</td><td><b>{{ f.title }}</b><br>{{ f.description }}<br><span class="meta mono">{{ f.evidence.correlation_id }}</span></td><td>{{ f.remediation }}</td></tr>{% endfor %}
+  </tbody></table>
+  {% else %}<p>No findings were recorded for this run.</p>{% endif %}
+
+  {% if d.comparison %}
+  <h2>Regression comparison</h2>
+  {% if d.comparison.error %}<p>Comparison unavailable: {{ d.comparison.error }}</p>{% else %}
+  <p>Baseline <span class="mono">{{ d.comparison.baseline.id }}</span> ({{ d.comparison.baseline.agent }} rev {{ d.comparison.baseline.agent_revision }}) compared with this run over {{ d.comparison.shared_scenarios }} shared scenario(s): {{ d.comparison.summary.improved }} improved, {{ d.comparison.summary.regressed }} regressed, {{ d.comparison.summary.unchanged }} unchanged.</p>
+  {% for w in d.comparison.warnings %}<p class="notice">{{ w }}</p>{% endfor %}
+  <table><thead><tr><th>Scenario</th><th>Baseline</th><th>This run</th><th>Change</th></tr></thead><tbody>
+  {% for r in d.comparison.scenarios %}<tr><td class="mono">{{ r.scenario_key }}</td><td class="{{ r.baseline.outcome }}">{{ r.baseline.outcome }}{% if r.baseline.attack_attempted %} (attempted){% endif %}</td><td class="{{ r.candidate.outcome }}">{{ r.candidate.outcome }}{% if r.candidate.attack_attempted %} (attempted){% endif %}</td><td>{{ r.direction }}</td></tr>{% endfor %}
+  </tbody></table>
+  {% endif %}{% endif %}
+
+  <h2>Scenario results and evidence</h2>
+  {% for r in d.results %}
+  <h3><span class="badge {{ r.outcome }}">{{ r.outcome }}</span> {{ r.scenario_key }}: {{ r.name }}</h3>
+  <p class="meta">{{ r.category }} · risk {{ r.risk }} · ground truth {{ r.ground_truth }} · trace <span class="mono">{{ r.correlation_id }}</span>{% if r.latency_ms is not none %} · {{ "%.0f"|format(r.latency_ms) }} ms{% endif %}</p>
+  <p>{{ r.reason }}</p>
+  {% if r.checks %}<ul>{% for c in r.checks %}<li class="{{ 'check-ok' if c.passed else 'check-bad' }}">{{ c.description }}. <span class="meta">{{ c.evidence }}</span></li>{% endfor %}</ul>{% endif %}
+  {% endfor %}
+
+  <h2>What could not be verified</h2>
+  <ul>{% for l in d.limitations %}<li>{{ l }}</li>{% endfor %}</ul>
+  {% if d.investigation and d.investigation.notes %}<h2>Investigator notes</h2><p>{{ d.investigation.notes }}</p>{% endif %}
+</main>
+</body>
+</html>

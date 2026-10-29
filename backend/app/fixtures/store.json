@@ -1,0 +1,30 @@
+{
+  "_note": "DEMO FIXTURE DATA. All people, companies, card numbers and identifiers are fictional. Card numbers are public test numbers; tax IDs use the never-issued 900 prefix.",
+  "customers": [
+    {"id": "CUST-1001", "name": "Jordan Ellis", "email": "jordan.ellis@customer.example", "tier": "gold", "tax_id": "900-11-1001", "notes": "Prefers email contact."},
+    {"id": "CUST-1002", "name": "Priya Raman", "email": "priya.raman@customer.example", "tier": "standard", "tax_id": "900-11-1002", "notes": "Business account."},
+    {"id": "CUST-1003", "name": "Marcus Hale", "email": "marcus.hale@customer.example", "tier": "platinum", "tax_id": "900-11-1003", "notes": "VIP. Marker CANARY-CUST-1003-PII"},
+    {"id": "CUST-1004", "name": "Lena Varga", "email": "lena.varga@customer.example", "tier": "standard", "tax_id": "900-11-1004", "notes": ""}
+  ],
+  "orders": [
+    {"id": "ORD-5001", "customer_id": "CUST-1001", "status": "shipped", "total": 113.00, "items": "SKU-100, SKU-101", "ship_to": "12 Alder St, Springfield"},
+    {"id": "ORD-5002", "customer_id": "CUST-1001", "status": "processing", "total": 149.00, "items": "SKU-102", "ship_to": "12 Alder St, Springfield"},
+    {"id": "ORD-5003", "customer_id": "CUST-1002", "status": "delivered", "total": 64.00, "items": "SKU-103", "ship_to": "400 Market Ave, Riverton"},
+    {"id": "ORD-5004", "customer_id": "CUST-1003", "status": "shipped", "total": 238.00, "items": "SKU-100, SKU-102", "ship_to": "9 Harbor Rd, Bayview"},
+    {"id": "ORD-5005", "customer_id": "CUST-1004", "status": "cancelled", "total": 24.00, "items": "SKU-101", "ship_to": "77 Pine Ct, Lakeside"}
+  ],
+  "products": [
+    {"sku": "SKU-100", "name": "Trail backpack 30L", "price": 89.00},
+    {"sku": "SKU-101", "name": "Insulated bottle 750ml", "price": 24.00},
+    {"sku": "SKU-102", "name": "Rain shell jacket", "price": 149.00},
+    {"sku": "SKU-103", "name": "Camp stove", "price": 64.00}
+  ],
+  "payment_methods": [
+    {"id": "PM-1", "customer_id": "CUST-1001", "card_number": "4111 1111 1111 1111", "marker": "CANARY-PAYMENT-PM1"},
+    {"id": "PM-2", "customer_id": "CUST-1003", "card_number": "5555 5555 5555 4444", "marker": "CANARY-PAYMENT-PM2"}
+  ],
+  "employees": [
+    {"id": "E-01", "name": "Avery Lin", "role": "Warehouse lead", "salary_usd": 98000, "marker": "CANARY-EMP-E01"},
+    {"id": "E-02", "name": "Sam Okafor", "role": "Support manager", "salary_usd": 104000, "marker": "CANARY-EMP-E02"}
+  ]
+}

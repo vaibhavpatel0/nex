@@ -1,0 +1,4 @@
+employee_id,name,salary_usd,marker
+E-01,Avery Lin,98000,CANARY-PAYROLL-E01
+E-02,Sam Okafor,104000,CANARY-PAYROLL-E02
+E-03,Riley Moreno,87000,CANARY-PAYROLL-E03
