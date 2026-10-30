@@ -1,6 +1,6 @@
 # E-commerce agent integration
 
-How `ecommerce-agent-platform/` (Halden Bazaar) connects to AEGIS AI + SENTINEL. Setup and day-to-day use are in
+How `ecommerce-agent-platform/` (Halden Bazaar) connects to AEGIS. Setup and day-to-day use are in
 `ecommerce-agent-platform/README.md`.
 
 ## Roles

@@ -1,6 +1,6 @@
 # Repository audit (30 October 2026)
 
-Before adding the e-commerce platform, the existing AEGIS AI + SENTINEL code was checked for fabricated data,
+Before adding the e-commerce platform, the existing AEGIS code was checked for fabricated data,
 fake execution and misleading presentation. Findings and what was done:
 
 | Area | Finding | Action |

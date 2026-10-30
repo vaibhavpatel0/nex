@@ -63,7 +63,7 @@ export function AppLayout() {
         <div className="brand">
           <IconShield size={22} style={{ color: "#5fb3ab" }} />
           <div>
-            <div className="brand-name">AEGIS AI + SENTINEL</div>
+            <div className="brand-name">AEGIS</div>
             <div className="brand-sub">Agent security testing and runtime protection</div>
           </div>
         </div>

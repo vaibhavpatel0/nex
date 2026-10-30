@@ -1,6 +1,6 @@
 # Agent Connection & Verification Center
 
-Developers connect an existing AI agent to AEGIS AI + SENTINEL by pasting its URL. No SDK is needed to start.
+Developers connect an existing AI agent to AEGIS by pasting its URL. No SDK is needed to start.
 
 **Paste URL, discover, verify ownership, authorize access, connect, test, monitor, protect.**
 

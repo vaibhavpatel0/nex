@@ -1,4 +1,4 @@
-"""Link the e-commerce platform to AEGIS AI + SENTINEL.
+"""Link the e-commerce platform to AEGIS.
 
 Creates a SENTINEL service token bound to agent `shop-assistant` and tool namespace `shop`, and a
 random internal token AEGIS uses to start test scenarios in the shop backend. Writes both into the

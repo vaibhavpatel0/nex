@@ -22,7 +22,7 @@ export function PolicyView() {
             </dl>
             <h3 style={{ marginTop: 12 }}>Parameters</h3>
             <Json value={p.params} />
-            <p className="small muted" style={{ marginTop: 8 }}>Policies are edited in AEGIS AI + SENTINEL under Policies. This view is read-only.</p>
+            <p className="small muted" style={{ marginTop: 8 }}>Policies are edited in AEGIS under Policies. This view is read-only.</p>
           </Panel>
         </>
       )}

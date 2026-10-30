@@ -5,7 +5,7 @@ export function Terms() {
       <h1>Terms of Service</h1>
       <p className="muted">Applies to this self-hosted installation of the Halden Bazaar test store, version 0.1.0. Last updated 30 October 2026.</p>
       <h2>What this is</h2>
-      <p>Halden Bazaar is a fictional store that ships with AEGIS AI + SENTINEL as a realistic target for testing an AI shopping agent. It is not a shop. Products, customers, orders and policies are synthetic. Nothing can be bought, no payment is taken and nothing is delivered. Whoever runs this installation operates it and is responsible for it.</p>
+      <p>Halden Bazaar is a fictional store that ships with AEGIS as a realistic target for testing an AI shopping agent. It is not a shop. Products, customers, orders and policies are synthetic. Nothing can be bought, no payment is taken and nothing is delivered. Whoever runs this installation operates it and is responsible for it.</p>
       <h2>Permitted use</h2>
       <ul>
         <li>Use it to develop, test and evaluate AI agents and the SENTINEL policies that govern them.</li>
@@ -39,7 +39,7 @@ export function Privacy() {
       <h2>What is sent elsewhere</h2>
       <ul>
         <li>To the configured model (local Ollama by default): the assistant's instructions, recent messages in the conversation, tool definitions and tool results. With an Ollama cloud model this leaves your computer and goes to ollama.com.</li>
-        <li>To the AEGIS AI + SENTINEL backend configured by the operator: each proposed tool call, its arguments, the record owner looked up from this store's database, and a preview of the tool result, so SENTINEL can decide and record it.</li>
+        <li>To the AEGIS backend configured by the operator: each proposed tool call, its arguments, the record owner looked up from this store's database, and a preview of the tool result, so SENTINEL can decide and record it.</li>
         <li>No analytics, tracking pixels or third-party scripts. Fonts are bundled.</li>
       </ul>
       <h2>Browser storage</h2>

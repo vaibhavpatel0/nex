@@ -1,4 +1,4 @@
-# AEGIS AI + SENTINEL. Run `make help` for targets. Tested with GNU make 3.81 (macOS default) and 4.x.
+# AEGIS. Run `make help` for targets. Tested with GNU make 3.81 (macOS default) and 4.x.
 PY ?= python3
 VENV := .venv
 BIN := $(VENV)/bin

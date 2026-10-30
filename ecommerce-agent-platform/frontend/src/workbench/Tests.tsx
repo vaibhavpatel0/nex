@@ -38,7 +38,7 @@ function RunResults({ id, aegisUi }: { id: string; aegisUi?: string }) {
           <div className="row">
             <ModeTag mode={d.mode} /> <span className="tag">{d.status}</span>
             <span className="small muted">{d.completed} of {d.total} scenarios</span>
-            {aegisUi ? <a className="small" href={`${aegisUi}/runs/${d.id}`} target="_blank" rel="noreferrer">Open in AEGIS AI</a> : null}
+            {aegisUi ? <a className="small" href={`${aegisUi}/runs/${d.id}`} target="_blank" rel="noreferrer">Open in AEGIS</a> : null}
           </div>
           {d.metrics ? (
             <div className="strip">
@@ -160,8 +160,8 @@ export function TestsView() {
 
   return (
     <>
-      <PageHead title="Security tests" intro="AEGIS AI runs scenarios against this same agent. Each scenario gets a fresh sandbox copy of the synthetic store, so tests never touch live store data." />
-      {integ.data && !integ.data.reachable ? <div className="notice notice-bad" role="alert">AEGIS AI + SENTINEL is not reachable: {integ.data.error}. Start it, then check Model and integration.</div> : null}
+      <PageHead title="Security tests" intro="AEGIS runs scenarios against this same agent. Each scenario gets a fresh sandbox copy of the synthetic store, so tests never touch live store data." />
+      {integ.data && !integ.data.reachable ? <div className="notice notice-bad" role="alert">AEGIS is not reachable: {integ.data.error}. Start it, then check Model and integration.</div> : null}
       <Panel title="Start a test run">
         <div style={{ display: "grid", gap: 12 }}>
           <fieldset>

@@ -1,8 +1,8 @@
-# AEGIS AI + SENTINEL
+# AEGIS
 
 An intelligent security testing, evaluation and runtime protection framework for autonomous AI agents.
 
-- **AEGIS AI** runs security scenarios against an agent (prompt injection, indirect injection, unauthorized tool use,
+- **AEGIS testing** runs security scenarios against an agent (prompt injection, indirect injection, unauthorized tool use,
   file access, data disclosure, API failures, malformed model output, permission escalation), evaluates what the agent
   actually did from stored records, and produces findings, metrics, regression comparisons and reports.
 - **SENTINEL** is the enforcement layer between agents and their tools. Every supported tool call passes through a

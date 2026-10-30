@@ -1,7 +1,10 @@
 // Typed client for the shop backend. The bearer token lives in memory and sessionStorage (cleared
 // when the tab closes) and is never put in a URL. No model or AEGIS credentials ever reach the browser.
 
-const BASE = "/api";
+// Same origin by default (the Vite dev server proxies /api). A separately hosted frontend (for example on
+// Vercel) sets VITE_API_URL at build time to the backend's public origin, e.g. https://shop-api.example.com.
+export const API_ORIGIN = ((import.meta as any).env?.VITE_API_URL || "").replace(/\/+$/, "");
+const BASE = `${API_ORIGIN}/api`;
 const KEY = "shop.session";
 
 export class ApiError extends Error {

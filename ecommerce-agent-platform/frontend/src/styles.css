@@ -1,4 +1,4 @@
-/* Halden Bazaar uses the AEGIS AI + SENTINEL design tokens (copied so this app builds on its own).
+/* Halden Bazaar uses the AEGIS design tokens (copied so this app builds on its own).
    Graphite + slate foundation, one muted teal for action and focus, amber for "needs approval",
    red for blocked or failing, green only for an explicitly verified condition.
    Status is never encoded by colour alone: every status token also carries text and a glyph. */

@@ -15,6 +15,14 @@ export interface AgentEvent {
 }
 export type LiveState = "connecting" | "open" | "closed";
 
+import { API_ORIGIN } from "./api";
+
+function wsUrl(path: string): string {
+  if (API_ORIGIN) return API_ORIGIN.replace(/^http/, "ws") + path;
+  const proto = location.protocol === "https:" ? "wss" : "ws";
+  return `${proto}://${location.host}${path}`;
+}
+
 export class LiveClient {
   private ws: WebSocket | null = null;
   private lastSeq = 0;
@@ -70,8 +78,7 @@ export class LiveClient {
     const token = this.getToken();
     if (!token || this.stopped) return;
     this.setState("connecting");
-    const proto = location.protocol === "https:" ? "wss" : "ws";
-    const ws = new WebSocket(`${proto}://${location.host}${this.path}`);
+    const ws = new WebSocket(wsUrl(this.path));
     this.ws = ws;
     ws.onopen = () => ws.send(JSON.stringify({ type: "auth", token, since_seq: this.lastSeq || null }));
     ws.onmessage = (m) => {

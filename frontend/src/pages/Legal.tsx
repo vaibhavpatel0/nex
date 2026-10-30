@@ -3,9 +3,9 @@ export function LegalTerms() {
   return (
     <article className="legal">
       <h1>Terms of Service</h1>
-      <p className="muted">Applies to this self-hosted installation of AEGIS AI + SENTINEL, version 0.1.0. Last updated 29 October 2026.</p>
+      <p className="muted">Applies to this self-hosted installation of AEGIS, version 0.1.0. Last updated 29 October 2026.</p>
       <h2>What this software is</h2>
-      <p>AEGIS AI + SENTINEL is a prototype for testing AI agents against security scenarios and enforcing tool-call policies at runtime. It is installed and operated by you, on infrastructure you control. Whoever operates the installation is responsible for it; there is no hosted service and no service provider behind this page.</p>
+      <p>AEGIS is a prototype for testing AI agents against security scenarios and enforcing tool-call policies at runtime. It is installed and operated by you, on infrastructure you control. Whoever operates the installation is responsible for it; there is no hosted service and no service provider behind this page.</p>
       <h2>Permitted use</h2>
       <ul>
         <li>Test agents and systems that you own or are explicitly authorised to test.</li>

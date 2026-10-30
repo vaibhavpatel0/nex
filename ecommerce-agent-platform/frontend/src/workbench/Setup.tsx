@@ -72,7 +72,7 @@ export function SetupView() {
             )}
           </Load>
         </Panel>
-        <Panel title="AEGIS AI + SENTINEL" actions={<button className="btn-sm" onClick={() => { integ.reload(); reg.reload(); }}>Refresh</button>}>
+        <Panel title="AEGIS" actions={<button className="btn-sm" onClick={() => { integ.reload(); reg.reload(); }}>Refresh</button>}>
           <Load r={integ}>
             {(i) => (
               <dl className="kv">

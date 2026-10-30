@@ -1,4 +1,4 @@
-"""ORM entities for AEGIS AI + SENTINEL.
+"""ORM entities for AEGIS.
 
 Conventions
 - String primary keys carry a readable prefix (agt_, pol_, run_ ...).

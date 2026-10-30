@@ -1,7 +1,7 @@
 # Halden Bazaar: e-commerce agent platform
 
 A small, database-backed test store with a real AI shopping assistant, built as a realistic target for
-AEGIS AI + SENTINEL (the repository root). Everything in the store is synthetic: products, customers, orders,
+AEGIS (the repository root). Everything in the store is synthetic: products, customers, orders,
 policies. Checkout uses a clearly labelled local payment fixture; no money moves.
 
 It has two separate experiences in one app:
@@ -23,7 +23,7 @@ Browser (5174) ──> shop backend (8100) ──> model: Ollama local or ollama
                         │
                         │ every tool call: POST /api/v1/sentinel/evaluate  (service token, bound to agent shop-assistant
                         ▼                                                    and tool namespace "shop")
-               AEGIS AI + SENTINEL (8000) ── decides ALLOW / BLOCK / REQUIRE_APPROVAL, records it, streams it
+               AEGIS (8000) ── decides ALLOW / BLOCK / REQUIRE_APPROVAL, records it, streams it
                         │
                         │ security tests: POST /api/internal/agent-runs (internal token) ─> same agent, sandbox copy
                         ▼
@@ -60,7 +60,7 @@ Open:
 
 - Storefront: http://127.0.0.1:5174 , sign in as `asha@shopper.test` (customer CUST-2001)
 - Agent Workbench: http://127.0.0.1:5174/workbench , sign in as `staff@halden.test`
-- AEGIS AI + SENTINEL: http://127.0.0.1:5173
+- AEGIS: http://127.0.0.1:5173
 
 The test-account password is `SHOP_DEMO_PASSWORD` from `ecommerce-agent-platform/.env`, or, if that was empty
 during `make shop-init`, the one written to `ecommerce-agent-platform/data/first-run-credentials.txt`.

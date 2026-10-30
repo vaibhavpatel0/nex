@@ -1,4 +1,4 @@
-"""FastAPI application factory for AEGIS AI + SENTINEL."""
+"""FastAPI application factory for AEGIS."""
 from __future__ import annotations
 
 import asyncio
@@ -45,7 +45,7 @@ async def lifespan(app: FastAPI):
 def create_app() -> FastAPI:
     settings = get_settings()
     app = FastAPI(
-        title="AEGIS AI + SENTINEL API",
+        title="AEGIS API",
         version=SOFTWARE_VERSION,
         description="Security testing (AEGIS) and runtime tool-call enforcement (SENTINEL) for AI agents.",
         lifespan=lifespan,

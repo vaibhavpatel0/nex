@@ -39,7 +39,7 @@ function Login() {
   return (
     <div className="login">
       <form onSubmit={submit} aria-labelledby="login-title">
-        <div className="row"><IconShield size={22} style={{ color: "var(--teal)" }} /><h1 id="login-title">Sign in to AEGIS AI + SENTINEL</h1></div>
+        <div className="row"><IconShield size={22} style={{ color: "var(--teal)" }} /><h1 id="login-title">Sign in to AEGIS</h1></div>
         <p className="muted small">Use the admin account created by <code>make init</code>. The generated password was printed once in the terminal.</p>
         <label className="field"><span>Username</span><input autoComplete="username" value={u} onChange={(e) => setU(e.target.value)} required /></label>
         <label className="field"><span>Password</span><input type="password" autoComplete="current-password" value={p} onChange={(e) => setP(e.target.value)} required /></label>
