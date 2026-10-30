@@ -28,6 +28,9 @@ def connection_status(db: Session, a: Agent) -> dict:
         return {"state": "disabled", "detail": "Agent is disabled"}
     if a.agent_type == "simulated":
         return {"state": "ready", "detail": "Rule-based simulated agent (no language model, no external dependency)"}
+    if a.provider in ("a2a", "custom_http"):
+        from app.connect.service import agent_connection_status
+        return agent_connection_status(db, a)
     key = {"ollama": "ollama", "ecommerce_http": "ecommerce"}.get(a.provider, "hosted")
     ic = db.get(IntegrationConfig, key)
     if ic is None or ic.status == "unchecked":
@@ -54,6 +57,8 @@ def agent_out(db: Session, a: Agent) -> dict:
     d["connection"] = connection_status(db, a)
     d["label"] = {"simulated": "Simulated (rule-based)", "local_model": "Local model", "hosted_model": "External hosted model",
                   "remote_agent": "Remote agent (e-commerce platform)"}.get(a.agent_type, a.agent_type)
+    if a.provider in ("a2a", "custom_http"):
+        d["label"] = "Connected agent (" + ("A2A" if a.provider == "a2a" else "AEGIS agent API") + ")"
     d["last_run"] = {"id": last_run.id, "status": last_run.status, "created_at": iso(last_run.created_at),
                      "counts": (last_run.summary or {}).get("counts")} if last_run else None
     d["last_event"] = {"seq": last_ev.seq, "event_type": last_ev.event_type, "summary": last_ev.summary,

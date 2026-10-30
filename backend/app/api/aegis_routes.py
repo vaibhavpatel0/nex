@@ -153,8 +153,20 @@ def _start(db_body: RunIn, who: str, replay_of: Optional[str] = None) -> str:
     return run_id
 
 
+def _authorize_connected(db: Session, p: Principal, agent_id: str, suite_key: Optional[str], keys: Optional[List[str]]) -> None:
+    """Agents connected by URL can only be tested by their owner (or an admin) within an approved test scope."""
+    from app.connect.service import ConnectError, authorize_test_run
+
+    try:
+        authorize_test_run(db, p, agent_id, suite_key, keys)
+    except ConnectError as exc:
+        raise HTTPException(status_code=exc.status, detail=exc.message)
+    db.commit()
+
+
 @router.post("/test-runs", status_code=202)
 async def create_run(body: RunIn, p: Principal = Depends(require("tests:run")), db: Session = Depends(get_db)):
+    _authorize_connected(db, p, body.agent_id, body.suite_key, body.scenario_keys)
     run_id = _start(body, p.username)
     return {"run_id": run_id, "status": "queued", "progress_url": f"/api/v1/test-runs/{run_id}"}
 
@@ -169,6 +181,7 @@ async def replay_run(run_id: str, body: ReplayIn, p: Principal = Depends(require
     src = get_or_404(db, TestRun, run_id, "Run")
     agent_id = body.agent_id or src.agent_id
     label = body.label or f"Replay of {src.label or src.id}"
+    _authorize_connected(db, p, agent_id, None, list(src.scenario_keys))
     new = _start(RunIn(agent_id=agent_id, scenario_keys=list(src.scenario_keys), label=label, mode=src.mode), p.username,
                  replay_of=src.id)
     return {"run_id": new, "status": "queued", "replay_of": src.id}

@@ -40,6 +40,15 @@
 - Customer and staff sessions use bearer tokens in session storage; there is no CSRF exposure, but there is also
   no rate limit on the chat endpoint beyond the model round limit.
 
+## Agent connections
+
+- OAuth identity-provider ownership verification is not implemented (shown as unavailable); DNS TXT and HTTPS file are.
+- Streaming (A2A `message/stream`) is not used and MCP tools are never invoked.
+- Health checks run on demand only; there is no background scheduler.
+- Isolation is per user within one deployment; there are no organisations. Administrators see every connection.
+- Black-box scenarios are judged from replies; an agent that quotes a planted marker while refusing is counted as failing.
+- Verified against local fixtures only (test CA, local DNS server). Not yet exercised against third-party production agents.
+
 ## Measurement caveats
 - Results apply to the executed scenarios, agent revision and policy set only. A 34-scenario suite cannot establish
   that a configuration is secure, and the comparison view says so when the sample is small.

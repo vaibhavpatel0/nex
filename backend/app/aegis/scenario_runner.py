@@ -24,7 +24,7 @@ from app.aegis.scenario_registry import scenario_setup, scenarios_for_suite
 from app.agents.base import AgentTask
 from app.config.settings import SOFTWARE_VERSION, get_settings
 from app.core.timeutil import new_id, utcnow
-from app.database.base import db_session
+from app.database.base import db_session, spawn_detached
 from app.models import (
     Agent,
     ApprovalRequest,
@@ -141,7 +141,7 @@ class ScenarioRunner:
         return run_id
 
     def start(self, run_id: str) -> None:
-        task = asyncio.get_running_loop().create_task(self._guarded(run_id))
+        task = spawn_detached(self._guarded(run_id))
         self._tasks[run_id] = task
         task.add_done_callback(lambda _t: self._tasks.pop(run_id, None))
 

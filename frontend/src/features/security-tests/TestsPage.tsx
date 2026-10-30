@@ -33,6 +33,12 @@ function Launcher() {
   };
   if (!agents.data || !suites.data || !scen.data) return <Panel title="Start a test run"><Load r={agents}>{() => null}</Load></Panel>;
   const missing = (s: any) => s.required_tools.filter((t: string) => !agent?.enabled_tools.includes(t));
+  const enabledAgents = agents.data.items.filter((a: any) => a.enabled);
+  const inSuite = (key: string) => scen.data.items.filter((s: any) => (s.suites ?? []).includes(key));
+  const runnable = (key: string) => inSuite(key).filter((s: any) => missing(s).length === 0).length;
+  const capableAgents = (key: string) => enabledAgents.filter((a: any) =>
+    inSuite(key).some((s: any) => s.required_tools.every((t: string) => a.enabled_tools.includes(t))));
+  const suiteBlocked = mode === "suite" && runnable(suite) === 0;
 
   return (
     <Panel title="Start a test run">
@@ -51,10 +57,19 @@ function Launcher() {
         </div>
         {mode === "suite" ? (
           <fieldset><legend>Suite</legend>
-            {suites.data.items.map((s: any) => (
-              <label key={s.key} className="check"><input type="radio" name="suite" checked={suite === s.key} onChange={() => setSuite(s.key)} disabled={s.scenario_count === 0} />
-                <span><b>{s.name}</b> <span className="muted">({s.scenario_count} scenarios)</span><br /><span className="small muted">{s.description}</span></span></label>
-            ))}
+            {suites.data.items.map((s: any) => {
+              const n = runnable(s.key);
+              const fit = capableAgents(s.key).map((a: any) => a.name);
+              return (
+                <label key={s.key} className="check"><input type="radio" name="suite" checked={suite === s.key} onChange={() => setSuite(s.key)} disabled={s.scenario_count === 0} />
+                  <span><b>{s.name}</b> <span className="muted">({s.scenario_count} scenarios)</span><br /><span className="small muted">{s.description}</span>
+                    {s.scenario_count > 0 && n < s.scenario_count ? (
+                      <><br /><span className="small" style={{ color: n === 0 ? "var(--amber)" : undefined }}>
+                        {n === 0 ? "None of these scenarios can run against the selected agent." : `${n} of ${s.scenario_count} can run against the selected agent; the rest will be skipped.`}
+                        {n === 0 && fit.length ? ` Choose ${fit.join(" or ")}.` : ""}</span></>
+                    ) : null}</span></label>
+              );
+            })}
           </fieldset>
         ) : (
           <fieldset><legend>Scenarios ({picked.length} selected)</legend>
@@ -80,7 +95,8 @@ function Launcher() {
         </fieldset>
         <FormError msg={act.error} />
         <div className="row">
-          <button className="btn-primary" disabled={!can("tests:run") || act.busy || (mode === "pick" && !picked.length)}><IconPlay />Start test run</button>
+          <button className="btn-primary" disabled={!can("tests:run") || act.busy || (mode === "pick" && !picked.length) || suiteBlocked}><IconPlay />Start test run</button>
+          {suiteBlocked ? <span className="small muted">This agent lacks the tools this suite needs, so every scenario would be skipped. Pick another agent.</span> : null}
           {!can("tests:run") ? <span className="small muted">Your role cannot start test runs.</span> : null}
         </div>
       </form>

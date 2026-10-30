@@ -56,6 +56,10 @@ make shop-dev     # tab 2: shop API :8100, storefront and Workbench :5174
 Details: [ecommerce-agent-platform/README.md](ecommerce-agent-platform/README.md) ·
 [integration](docs/ECOMMERCE_INTEGRATION.md) · [audit](docs/AUDIT.md).
 
+## Connect your own agent by URL
+
+**Agent connections** in the sidebar: paste an agent's URL (A2A Agent Card, MCP server, OpenAPI document or AEGIS agent manifest), prove you control its domain (DNS TXT or HTTPS file), authorize scoped access, then test it, monitor it and, after routing its tool calls through SENTINEL, protect it. Protection is shown only when SENTINEL has actually recorded decisions for the agent. Try it locally with `make connect-demo`. Details: [docs/AGENT_CONNECTIONS.md](docs/AGENT_CONNECTIONS.md).
+
 ## Repository layout
 
 ```

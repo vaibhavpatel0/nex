@@ -34,7 +34,7 @@ RULE_DOCS = {
     "attachment_restriction": "Params: blocked_classifications. Triggers for disallowed or confidential attachments.",
     "sensitive_egress": "Params: fields. Triggers when outbound content contains credentials, card numbers, tax IDs or markers.",
     "suspicious_sequence": "Params: prior_classifications, internal_domains. Triggers on an external send after a sensitive read.",
-    "approval_required": "Params: when (always | external_recipients), internal_domains.",
+    "approval_required": "Params: when (always | external_recipients | grant_flag), internal_domains.",
     "rate_limit": "Params: max_calls, window_seconds, scope (session | agent), per_tool.",
     "failure_limit": "Params: max_consecutive_failures.",
     "url_allowlist": "Params: allowed_schemes, allowed_hosts. Always blocks private, loopback, link-local and IP-literal hosts.",

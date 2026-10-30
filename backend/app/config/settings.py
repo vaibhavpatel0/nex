@@ -55,6 +55,27 @@ class Settings(BaseSettings):
     ecommerce_ui_url: str = Field(default="http://127.0.0.1:5174", alias="AEGIS_ECOMMERCE_UI_URL")
     remote_agent_timeout_seconds: float = Field(default=240.0, alias="AEGIS_REMOTE_AGENT_TIMEOUT_SECONDS", gt=0, le=1800)
 
+    # Agent connections (app/connect). Every submitted URL is untrusted: HTTPS only, public addresses only.
+    # The two host lists are explicit development exceptions (exact host names, no wildcards), off by default.
+    connect_allowed_private_hosts: str = Field(default="", alias="AEGIS_CONNECT_ALLOWED_PRIVATE_HOSTS")
+    connect_allow_http_hosts: str = Field(default="", alias="AEGIS_CONNECT_ALLOW_HTTP_HOSTS")
+    connect_dns_servers: str = Field(default="", alias="AEGIS_CONNECT_DNS_SERVERS")  # empty: system resolver
+    connect_ca_bundle: str = Field(default="", alias="AEGIS_CONNECT_CA_BUNDLE")  # extra trusted CA (PEM), optional
+    connect_timeout_seconds: float = Field(default=8.0, alias="AEGIS_CONNECT_TIMEOUT_SECONDS", gt=0, le=60)
+    connect_agent_timeout_seconds: float = Field(default=90.0, alias="AEGIS_CONNECT_AGENT_TIMEOUT_SECONDS", gt=0, le=600)
+    connect_max_response_bytes: int = Field(default=1_000_000, alias="AEGIS_CONNECT_MAX_RESPONSE_BYTES", ge=1024, le=10_000_000)
+    connect_challenge_ttl_hours: int = Field(default=24, alias="AEGIS_CONNECT_CHALLENGE_TTL_HOURS", ge=1, le=168)
+    # Fernet key for stored agent credentials. When unset, a key is generated once into data/credential.key (0600).
+    credential_key: str = Field(default="", alias="AEGIS_CREDENTIAL_KEY", repr=False)
+
+    @property
+    def connect_private_allowlist(self) -> List[str]:
+        return [h.strip().lower() for h in self.connect_allowed_private_hosts.split(",") if h.strip()]
+
+    @property
+    def connect_http_allowlist(self) -> List[str]:
+        return [h.strip().lower() for h in self.connect_allow_http_hosts.split(",") if h.strip()]
+
     @field_validator("data_dir", mode="before")
     @classmethod
     def _resolve_data_dir(cls, v):  # type: ignore[no-untyped-def]

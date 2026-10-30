@@ -484,6 +484,124 @@ class IntegrationConfig(Base):
     last_checked_at: Mapped[Optional[datetime]] = mapped_column(UTCDateTime)
 
 
+# --------------------------------------------------------------------------- agent connections
+class AgentConnection(Base):
+    """An external agent endpoint submitted by a developer (see app/connect).
+
+    Each stage is tracked separately so the UI never conflates them:
+    discovery (what the endpoint says about itself), verification (proof of domain control),
+    authorization (the owner's explicit grant and scoped credentials), health, monitoring and
+    protection (SENTINEL enforcement observed, not merely configured).
+    """
+
+    __tablename__ = "agent_connections"
+    id: Mapped[str] = mapped_column(String(40), primary_key=True)
+    owner_user_id: Mapped[str] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    name: Mapped[str] = mapped_column(String(128), nullable=False)
+    submitted_url: Mapped[str] = mapped_column(String(2048), nullable=False)
+    host: Mapped[str] = mapped_column(String(255), nullable=False, index=True)
+    protocol: Mapped[str] = mapped_column(String(24), nullable=False)  # a2a | mcp | openapi | custom_http | none
+    protocol_version: Mapped[Optional[str]] = mapped_column(String(32))
+    interaction_endpoint: Mapped[Optional[str]] = mapped_column(String(2048))
+    descriptor: Mapped[dict] = mapped_column(JSON, default=dict, nullable=False)  # redacted discovery result
+    capabilities: Mapped[dict] = mapped_column(JSON, default=dict, nullable=False)  # adapter capability matrix
+    discovered_at: Mapped[Optional[datetime]] = mapped_column(UTCDateTime)
+    verification_status: Mapped[str] = mapped_column(String(16), default="unverified", nullable=False)
+    verified_domain: Mapped[Optional[str]] = mapped_column(String(255))
+    verification_method: Mapped[Optional[str]] = mapped_column(String(24))
+    verified_at: Mapped[Optional[datetime]] = mapped_column(UTCDateTime)
+    verified_by: Mapped[Optional[str]] = mapped_column(String(64))
+    auth_status: Mapped[str] = mapped_column(String(16), default="none", nullable=False)
+    authorized_at: Mapped[Optional[datetime]] = mapped_column(UTCDateTime)
+    authorized_by: Mapped[Optional[str]] = mapped_column(String(64))
+    granted_permissions: Mapped[list] = mapped_column(JSON, default=list, nullable=False)
+    health_status: Mapped[str] = mapped_column(String(16), default="unchecked", nullable=False)
+    health_detail: Mapped[Optional[str]] = mapped_column(Text)
+    last_health_at: Mapped[Optional[datetime]] = mapped_column(UTCDateTime)
+    last_healthy_at: Mapped[Optional[datetime]] = mapped_column(UTCDateTime)
+    mode: Mapped[str] = mapped_column(String(16), default="none", nullable=False)  # none | monitoring | protected
+    agent_id: Mapped[Optional[str]] = mapped_column(ForeignKey("agents.id", ondelete="SET NULL"))
+    namespace: Mapped[str] = mapped_column(String(24), unique=True, nullable=False)
+    service_token_id: Mapped[Optional[str]] = mapped_column(ForeignKey("service_tokens.id", ondelete="SET NULL"))
+    disconnected_at: Mapped[Optional[datetime]] = mapped_column(UTCDateTime)
+    created_at: Mapped[datetime] = mapped_column(UTCDateTime, default=utcnow, nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(UTCDateTime, default=utcnow, nullable=False)
+    __table_args__ = (
+        CheckConstraint("protocol in ('a2a','mcp','openapi','custom_http','none')", name="ck_conn_protocol"),
+        CheckConstraint("verification_status in ('unverified','pending','verified','expired','failed')", name="ck_conn_verif"),
+        CheckConstraint("auth_status in ('none','authorized','expired','revoked')", name="ck_conn_auth"),
+        CheckConstraint("mode in ('none','monitoring','protected')", name="ck_conn_mode"),
+    )
+
+
+class ConnectionChallenge(Base):
+    __tablename__ = "connection_challenges"
+    id: Mapped[str] = mapped_column(String(40), primary_key=True)
+    connection_id: Mapped[str] = mapped_column(ForeignKey("agent_connections.id", ondelete="CASCADE"), nullable=False, index=True)
+    method: Mapped[str] = mapped_column(String(16), nullable=False)  # dns_txt | https_file
+    domain: Mapped[str] = mapped_column(String(255), nullable=False)
+    value: Mapped[str] = mapped_column(String(128), nullable=False)
+    location: Mapped[str] = mapped_column(String(2048), nullable=False)  # TXT record name or file URL
+    status: Mapped[str] = mapped_column(String(16), default="pending", nullable=False)
+    detail: Mapped[Optional[str]] = mapped_column(Text)
+    expires_at: Mapped[datetime] = mapped_column(UTCDateTime, nullable=False)
+    created_by: Mapped[str] = mapped_column(String(64), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(UTCDateTime, default=utcnow, nullable=False)
+    checked_at: Mapped[Optional[datetime]] = mapped_column(UTCDateTime)
+    __table_args__ = (
+        CheckConstraint("method in ('dns_txt','https_file')", name="ck_chal_method"),
+        CheckConstraint("status in ('pending','verified','failed','expired')", name="ck_chal_status"),
+    )
+
+
+class ConnectionCredential(Base):
+    """Scoped credential for an agent endpoint. The secret is encrypted (Fernet) and never returned."""
+
+    __tablename__ = "connection_credentials"
+    id: Mapped[str] = mapped_column(String(40), primary_key=True)
+    connection_id: Mapped[str] = mapped_column(ForeignKey("agent_connections.id", ondelete="CASCADE"), nullable=False, index=True)
+    kind: Mapped[str] = mapped_column(String(32), nullable=False)  # bearer | header | oauth2_client_credentials
+    header_name: Mapped[Optional[str]] = mapped_column(String(64))
+    ciphertext: Mapped[str] = mapped_column(Text, nullable=False)
+    meta: Mapped[dict] = mapped_column(JSON, default=dict, nullable=False)  # non-secret: token_url, client_id, scopes
+    fingerprint: Mapped[str] = mapped_column(String(16), nullable=False)
+    expires_at: Mapped[Optional[datetime]] = mapped_column(UTCDateTime)
+    created_by: Mapped[str] = mapped_column(String(64), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(UTCDateTime, default=utcnow, nullable=False)
+    revoked_at: Mapped[Optional[datetime]] = mapped_column(UTCDateTime)
+    __table_args__ = (
+        CheckConstraint("kind in ('bearer','header','oauth2_client_credentials')", name="ck_cred_kind"),
+    )
+
+
+class ConnectionTestScope(Base):
+    """The owner's approval for AEGIS to run specific suites against the connected endpoint."""
+
+    __tablename__ = "connection_test_scopes"
+    id: Mapped[str] = mapped_column(String(40), primary_key=True)
+    connection_id: Mapped[str] = mapped_column(ForeignKey("agent_connections.id", ondelete="CASCADE"), nullable=False, index=True)
+    suites: Mapped[list] = mapped_column(JSON, nullable=False)
+    max_runs_per_day: Mapped[int] = mapped_column(Integer, nullable=False)
+    environment: Mapped[str] = mapped_column(String(64), nullable=False)
+    approved_by: Mapped[str] = mapped_column(String(64), nullable=False)
+    approved_at: Mapped[datetime] = mapped_column(UTCDateTime, default=utcnow, nullable=False)
+    expires_at: Mapped[datetime] = mapped_column(UTCDateTime, nullable=False)
+    revoked_at: Mapped[Optional[datetime]] = mapped_column(UTCDateTime)
+
+
+class ConnectionEvent(Base):
+    """Audit log for connection actions. Details never contain secrets."""
+
+    __tablename__ = "connection_events"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    connection_id: Mapped[str] = mapped_column(ForeignKey("agent_connections.id", ondelete="CASCADE"), nullable=False, index=True)
+    actor: Mapped[str] = mapped_column(String(64), nullable=False)
+    action: Mapped[str] = mapped_column(String(48), nullable=False)
+    outcome: Mapped[str] = mapped_column(String(16), default="ok", nullable=False)
+    detail: Mapped[dict] = mapped_column(JSON, default=dict, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(UTCDateTime, default=utcnow, nullable=False)
+
+
 def model_to_dict(obj: Any, exclude: "tuple[str, ...]" = ()) -> dict:
     from app.core.timeutil import iso
 

@@ -267,6 +267,11 @@ def r_approval_required(inp: EvaluationInput, p: PolicyView) -> RuleResult:
     when = p.params.get("when", "always")
     if when == "always":
         return RuleResult(True, "This operation always requires human approval")
+    if when == "grant_flag":
+        g = grant_for(inp)
+        if g and g.get("require_approval"):
+            return RuleResult(True, "The owner's permission settings require human approval for this tool")
+        return RuleResult(False, "The grant does not require approval")
     if when == "external_recipients":
         external = _external(inp.resource.get("recipient_domains", []), p.params.get("internal_domains", []))
         if external:

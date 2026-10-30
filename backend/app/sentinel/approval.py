@@ -105,9 +105,17 @@ class ApprovalService:
 
     @staticmethod
     def expire_stale(db: Session) -> int:
+        # Read first and write only when something expired. An UPDATE takes SQLite's write lock even when it
+        # matches no rows; read-only pages (the overview polls this) must not hold that lock until their
+        # response is committed, or they stall background writers such as test runs.
+        now = utcnow()
+        stale = db.execute(select(ApprovalRequest.id).where(
+            ApprovalRequest.status.in_(("pending", "approved")), ApprovalRequest.expires_at <= now)).scalars().all()
+        if not stale:
+            return 0
         res = db.execute(
             update(ApprovalRequest)
-            .where(ApprovalRequest.status.in_(("pending", "approved")), ApprovalRequest.expires_at <= utcnow())
+            .where(ApprovalRequest.id.in_(stale), ApprovalRequest.status.in_(("pending", "approved")))
             .values(status="expired")
         )
         return res.rowcount or 0

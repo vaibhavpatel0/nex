@@ -23,6 +23,7 @@ ALL_PERMISSIONS: FrozenSet[str] = frozenset(
         "integrations:write",
         "users:manage",
         "data:delete",
+        "connections:manage",  # connect, verify, authorize and test the user's own external agents
         # Used by other applications (service tokens) that rely on SENTINEL:
         "sentinel:evaluate",   # ask for a decision and report the tool result
         "sentinel:ingest",     # create runtime traces and record model events
@@ -33,7 +34,8 @@ ALL_PERMISSIONS: FrozenSet[str] = frozenset(
 ROLE_PERMISSIONS: Dict[str, FrozenSet[str]] = {
     "viewer": frozenset({"read"}),
     "operator": frozenset(
-        {"read", "tests:run", "runtime:invoke", "approvals:decide", "reports:generate", "investigations:write"}
+        {"read", "tests:run", "runtime:invoke", "approvals:decide", "reports:generate", "investigations:write",
+         "connections:manage"}
     ),
     "admin": ALL_PERMISSIONS,
 }

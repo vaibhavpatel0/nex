@@ -15,7 +15,7 @@ from app.aegis.scenario_runner import agent_snapshot, view_from_snapshot
 from app.agents.base import AgentTask
 from app.config.settings import get_settings
 from app.core.timeutil import new_id
-from app.database.base import db_session
+from app.database.base import db_session, spawn_detached
 from app.models import Agent
 from app.security.tool_gateway import GatewayResult, InvocationContext, gateway
 from app.services.agent_executor import execute_agent
@@ -52,7 +52,7 @@ def start_session(agent_id: str, task: str, session_subject: Optional[str], trig
                             task=AgentTask(task=task, session_subject=session_subject), sandbox=runtime_sandbox(),
                             correlation_id=correlation, kind="runtime", triggered_by=triggered_by)
 
-    t = asyncio.get_running_loop().create_task(_go())
+    t = spawn_detached(_go())
     _tasks.add(t)
     t.add_done_callback(_tasks.discard)
     return correlation

@@ -12,7 +12,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 
-from app.api import aegis_routes, agent_routes, auth_routes, policy_routes, runtime_routes, sentinel_routes, system_routes
+from app.api import (aegis_routes, agent_routes, auth_routes, connection_routes, policy_routes, runtime_routes,
+                     sentinel_routes, system_routes)
 from app.config.settings import REPO_ROOT, SOFTWARE_VERSION, get_settings
 from app.database.base import init_engine, schema_is_current
 from app.middleware.security import BodySizeLimitMiddleware, RateLimitMiddleware, SecurityHeadersMiddleware
@@ -30,7 +31,8 @@ async def lifespan(app: FastAPI):
     settings.sandbox_dir.mkdir(parents=True, exist_ok=True)
     init_engine(settings.resolved_database_url)
     if not schema_is_current():
-        raise RuntimeError("Database is not initialised. Run `make init` (python -m app.cli init) first.")
+        raise RuntimeError("Database is not initialised or not up to date. Run `make init` (python -m app.cli init); "
+                           "it applies pending migrations and keeps existing data.")
     event_bus.bind_loop(asyncio.get_running_loop())
     from app.aegis.scenario_runner import runner
     recovered = runner.recover_interrupted()
@@ -70,7 +72,8 @@ def create_app() -> FastAPI:
         log.exception("unhandled error")
         return JSONResponse({"detail": "Internal server error"}, status_code=500)
 
-    for module in (system_routes, auth_routes, agent_routes, policy_routes, aegis_routes, runtime_routes, sentinel_routes):
+    for module in (system_routes, auth_routes, agent_routes, policy_routes, aegis_routes, runtime_routes, sentinel_routes,
+                   connection_routes):
         app.include_router(module.router, prefix="/api/v1")
     app.include_router(ws_routes.router)
 

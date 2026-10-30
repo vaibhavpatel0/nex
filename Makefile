@@ -3,7 +3,7 @@ PY ?= python3
 VENV := .venv
 BIN := $(VENV)/bin
 
-.PHONY: help setup init dev dev-backend dev-frontend test test-backend test-frontend build serve reset-demo e2e clean link-ecommerce shop-setup shop-init shop-dev shop-test
+.PHONY: connect-demo help setup init dev dev-backend dev-frontend test test-backend test-frontend build serve reset-demo e2e clean link-ecommerce shop-setup shop-init shop-dev shop-test
 
 help:
 	@echo "setup         create .venv, install Python and npm dependencies"
@@ -79,3 +79,13 @@ shop-dev:
 
 shop-test:
 	$(MAKE) -C ecommerce-agent-platform test
+
+# Two local demo agents for trying the Agent Connection Center (plain HTTP on localhost).
+# Requires in .env: AEGIS_CONNECT_ALLOW_HTTP_HOSTS=localhost and AEGIS_CONNECT_ALLOWED_PRIVATE_HOSTS=localhost
+connect-demo:
+	@echo "Careful A2A demo agent:   http://localhost:9201/.well-known/agent-card.json"
+	@echo "Naive AEGIS-API agent:    http://localhost:9202/   (token: fixture-scoped-token-7f3a91c2, a test value)"
+	@echo "Press Ctrl+C to stop."
+	$(BIN)/python tests/connect/fixture_agents.py --http --port 9201 --default-host a2a.agent.test & \
+	$(BIN)/python tests/connect/fixture_agents.py --http --port 9202 --default-host agent.test & \
+	wait

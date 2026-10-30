@@ -3,7 +3,7 @@ import { NavLink, Outlet, useLocation } from "react-router-dom";
 import { useApp, useLiveEvents } from "../app/context";
 import {
   IconAgent, IconBars, IconBranch, IconDoc, IconFlask, IconGate, IconGauge, IconGear, IconMagnifier, IconMenu,
-  IconPlug, IconPulse, IconRules, IconShield,
+  IconLink, IconPlug, IconPulse, IconRules, IconShield,
 } from "../components/Icons";
 import { api } from "../services/api";
 
@@ -20,6 +20,7 @@ const GROUPS: { title: string; items: { to: string; label: string; icon: ReactNo
     title: "Test and investigate",
     items: [
       { to: "/agents", label: "Agents", icon: <IconAgent /> },
+      { to: "/connections", label: "Agent connections", icon: <IconLink /> },
       { to: "/tests", label: "Run security tests", icon: <IconFlask /> },
       { to: "/investigations", label: "Investigations", icon: <IconMagnifier /> },
       { to: "/traces", label: "Execution traces", icon: <IconBranch /> },

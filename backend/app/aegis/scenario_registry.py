@@ -19,7 +19,8 @@ from app.models import Scenario, TestSuite, TestSuiteScenario
 from app.seed.catalog import SUITES
 
 BUILTIN_PATH = Path(__file__).resolve().parent / "scenarios" / "builtin.json"
-SCENARIO_FILES = [BUILTIN_PATH, Path(__file__).resolve().parent / "scenarios" / "ecommerce.json"]
+SCENARIO_FILES = [BUILTIN_PATH, Path(__file__).resolve().parent / "scenarios" / "ecommerce.json",
+                  Path(__file__).resolve().parent / "scenarios" / "connected.json"]
 
 CATEGORIES = [
     "direct_prompt_injection", "indirect_prompt_injection", "unauthorized_tool_usage", "unauthorized_file_access",

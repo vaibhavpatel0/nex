@@ -69,6 +69,7 @@ export const api = {
   get: <T = any>(p: string) => request<T>("GET", p),
   post: <T = any>(p: string, b: unknown = {}) => request<T>("POST", p, b),
   patch: <T = any>(p: string, b: unknown) => request<T>("PATCH", p, b),
+  put: <T = any>(p: string, b: unknown) => request<T>("PUT", p, b),
 };
 
 export function qs(params: Record<string, string | number | boolean | undefined | null>): string {

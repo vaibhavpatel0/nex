@@ -92,7 +92,8 @@ def get_db() -> Iterator[Session]:
 def schema_is_current() -> bool:
     """Return True when the migration-managed tables exist."""
     insp = inspect(get_engine())
-    return insp.has_table("alembic_version") and insp.has_table("agents")
+    # agent_connections arrived in migration 0003; an older database must be upgraded with `make init`.
+    return insp.has_table("alembic_version") and insp.has_table("agents") and insp.has_table("agent_connections")
 
 
 # --- commit before the response leaves -------------------------------------------------------------
@@ -106,6 +107,22 @@ def _track(session: Session) -> None:
     pending = _request_sessions.get()
     if pending is not None:
         pending.append(session)
+
+
+def spawn_detached(coro):
+    """Start a background task that does not belong to the current request.
+
+    asyncio tasks copy the creating context. A task started inside a request would otherwise inherit the
+    request's session-tracking list, and CommitBeforeResponseRoute would commit the task's live sessions
+    from a worker thread while the task is still using them (seen as a stuck SQLite write lock).
+    """
+    import asyncio
+
+    async def _run():
+        _request_sessions.set(None)
+        return await coro
+
+    return asyncio.get_running_loop().create_task(_run())
 
 
 class CommitBeforeResponseRoute(APIRoute):

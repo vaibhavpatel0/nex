@@ -52,7 +52,7 @@ export function ConnTok({ state }: { state: string }) {
 }
 
 export function AgentTypeTag({ t }: { t: string }) {
-  const label = { simulated: "Simulated", local_model: "Local model", hosted_model: "External hosted", remote_agent: "Remote agent (e-commerce platform)" }[t] ?? t;
+  const label = { simulated: "Simulated", local_model: "Local model", hosted_model: "External hosted", remote_agent: "Remote agent" }[t] ?? t;
   return <span className="tag">{label}</span>;
 }
 
@@ -67,8 +67,11 @@ export function Time({ iso, rel = false }: { iso?: string | null; rel?: boolean 
   const local = d.toLocaleString(undefined, { year: "numeric", month: "short", day: "2-digit", hour: "2-digit", minute: "2-digit", second: "2-digit" });
   let text = local;
   if (rel) {
-    const s = Math.round((Date.now() - d.getTime()) / 1000);
-    text = s < 60 ? `${s}s ago` : s < 3600 ? `${Math.floor(s / 60)}m ago` : s < 86400 ? `${Math.floor(s / 3600)}h ago` : local;
+    const diff = Math.round((Date.now() - d.getTime()) / 1000);
+    const s = Math.abs(diff);
+    const span = s < 60 ? `${s}s` : s < 3600 ? `${Math.floor(s / 60)}m` : s < 86400 ? `${Math.floor(s / 3600)}h` : `${Math.floor(s / 86400)} day(s)`;
+    if (diff > -5) text = s < 86400 ? `${diff < 0 ? "0s" : span} ago` : local;
+    else text = s < 31 * 86400 ? `in ${span}` : local;
   }
   return <time dateTime={iso} title={`${local} (local) / ${iso} (UTC)`}>{text}</time>;
 }

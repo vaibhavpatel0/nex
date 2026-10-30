@@ -188,8 +188,8 @@ legend { font-size: 12.5px; color: var(--ink-2); padding: 0 4px; }
 .kv dd { margin: 0; min-width: 0; overflow-wrap: anywhere; }
 
 /* ---------------------------------------------------------------- feedback states */
-.skel { background: linear-gradient(90deg, var(--surface-2), var(--surface-3), var(--surface-2)); background-size: 200% 100%; animation: skel 1.4s ease-in-out infinite; border-radius: var(--radius); height: 12px; }
-@keyframes skel { from { background-position: 200% 0; } to { background-position: -200% 0; } }
+.skel { background: var(--surface-3); animation: skel 1.4s ease-in-out infinite; border-radius: var(--radius); height: 12px; }
+@keyframes skel { 0%, 100% { opacity: 1; } 50% { opacity: 0.45; } }
 .state { padding: 18px 14px; display: grid; gap: 8px; justify-items: start; }
 .state h3 { font-size: 14px; }
 .state-error { border-left: 0; color: var(--ink); }
@@ -251,3 +251,16 @@ legend { font-size: 12.5px; color: var(--ink-2); padding: 0 4px; }
 .chart-wrap { position: relative; }
 .swatch { display: inline-block; width: 14px; height: 3px; border-radius: 2px; vertical-align: middle; }
 .swatch-box { width: 10px; height: 10px; border-radius: 2px; }
+
+/* ---------------------------------------------------------------- agent connections */
+.conn-steps { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px; }
+.conn-steps li { display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; padding: 3px 10px 3px 4px; border: 1px solid var(--line); border-radius: var(--radius); color: var(--ink-2); background: var(--surface); }
+.conn-steps .n { display: inline-grid; place-items: center; width: 18px; height: 18px; border-radius: 50%; border: 1px solid var(--line-strong); font-size: 11px; }
+.conn-steps li[data-state="done"] { color: var(--ink); }
+.conn-steps li[data-state="done"] .n { background: var(--green-soft); color: var(--green); border-color: var(--green); }
+.conn-steps li[data-state="current"] { color: var(--ink); border-color: var(--teal); }
+.conn-steps li[data-state="current"] .n { border-color: var(--teal); color: var(--teal); }
+.conn-steps li[data-state="na"] { opacity: 0.6; }
+ul.audit { list-style: none; margin: 0; padding: 0; max-height: 420px; overflow: auto; }
+ul.audit li { padding: 8px 14px; border-bottom: 1px solid var(--line); }
+ul.audit li:last-child { border-bottom: 0; }

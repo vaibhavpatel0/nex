@@ -88,7 +88,8 @@ def create_service_token(db: Session, name: str, scopes: Sequence[str], agent_ke
     """Create or rotate a service token. Returns the plaintext token once; only its hash is stored."""
     from app.security.authorization import ALL_PERMISSIONS
 
-    bad = [x for x in scopes if x not in ALL_PERMISSIONS or x in ("users:manage", "data:delete", "policies:write")]
+    bad = [x for x in scopes if x not in ALL_PERMISSIONS
+           or x in ("users:manage", "data:delete", "policies:write", "connections:manage")]
     if bad:
         raise ValueError("scopes not allowed for service tokens: " + ", ".join(bad))
     token = SERVICE_TOKEN_PREFIX + secrets.token_urlsafe(32)

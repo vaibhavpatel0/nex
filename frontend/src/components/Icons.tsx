@@ -26,6 +26,7 @@ export const IconMagnifier = (p: P) => <Svg {...p}><circle cx="7" cy="7" r="4.5"
 export const IconBranch = (p: P) => <Svg {...p}><circle cx="4" cy="3.5" r="1.5" /><circle cx="4" cy="12.5" r="1.5" /><circle cx="12" cy="6.5" r="1.5" /><path d="M4 5v6M12 8c0 2.5-3 2.5-8 3" /></Svg>;
 export const IconDoc = (p: P) => <Svg {...p}><path d="M3.5 1.5h6l3 3v10h-9Z" /><path d="M9.5 1.5v3h3M5.5 8h5M5.5 10.5h5" /></Svg>;
 export const IconBars = (p: P) => <Svg {...p}><path d="M2 14h12" /><path d="M4 11V7M8 11V3.5M12 11V5.5" strokeWidth={2} /></Svg>;
+export const IconLink = (p: P) => <Svg {...p}><path d="M6.5 9.5 9.5 6.5" /><path d="M7 4.5 8.6 2.9a2.8 2.8 0 0 1 4 4L11 8.5" /><path d="M9 11.5 7.4 13.1a2.8 2.8 0 0 1-4-4L5 7.5" /></Svg>;
 export const IconPlug = (p: P) => <Svg {...p}><path d="M5.5 1.5v3M10.5 1.5v3" /><path d="M3.5 4.5h9v2.5a4.5 4.5 0 0 1-9 0Z" /><path d="M8 11.5v3" /></Svg>;
 export const IconGear = (p: P) => <Svg {...p}><circle cx="8" cy="8" r="2.2" /><path d="M8 1.5v2M8 12.5v2M1.5 8h2M12.5 8h2M3.4 3.4l1.4 1.4M11.2 11.2l1.4 1.4M3.4 12.6l1.4-1.4M11.2 4.8l1.4-1.4" /></Svg>;
 export const IconMenu = (p: P) => <Svg {...p}><path d="M2 4h12M2 8h12M2 12h12" /></Svg>;

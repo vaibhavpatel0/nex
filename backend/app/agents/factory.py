@@ -17,6 +17,8 @@ SUPPORTED = {
     ("local_model", "ollama"),
     ("hosted_model", "openai_compatible"),
     ("remote_agent", "ecommerce_http"),
+    ("remote_agent", "a2a"),
+    ("remote_agent", "custom_http"),
 }
 
 
@@ -26,6 +28,9 @@ def build_agent(snapshot: Dict[str, Any]) -> AgentAdapter:
         raise AgentUnavailable(f"No adapter is implemented for {kind[0]} / {kind[1]}")
     if kind[0] == "simulated":
         return SimulatedAgent(snapshot.get("behavior") or "naive")
+    if kind[0] == "remote_agent" and kind[1] in ("a2a", "custom_http"):
+        from app.agents.connected import ConnectedAgent
+        return ConnectedAgent(snapshot["key"])
     if kind[0] == "remote_agent":
         s = get_settings()
         return RemoteHTTPAgent(s.ecommerce_base_url, s.ecommerce_token, s.remote_agent_timeout_seconds)

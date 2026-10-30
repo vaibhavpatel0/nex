@@ -4,6 +4,7 @@ import { IconShield } from "../components/Icons";
 import { AppLayout } from "../layouts/AppLayout";
 import { AgentDetailPage, AgentsPage } from "../features/agents/AgentsPage";
 import { AnalyticsPage } from "../features/analytics/AnalyticsPage";
+import { ConnectionDetailPage, ConnectionsPage } from "../features/connections/ConnectionsPage";
 import { OverviewPage } from "../features/dashboard/OverviewPage";
 import { IntegrationsPage } from "../features/settings/IntegrationsPage";
 import { InvestigationDetailPage, InvestigationsPage } from "../features/investigations/InvestigationsPage";
@@ -68,6 +69,8 @@ function Gate() {
           <Route path="runtime" element={<RuntimePage />} />
           <Route path="agents" element={<AgentsPage />} />
           <Route path="agents/:id" element={<AgentDetailPage />} />
+          <Route path="connections" element={<ConnectionsPage />} />
+          <Route path="connections/:id" element={<ConnectionDetailPage />} />
           <Route path="tests" element={<TestsPage />} />
           <Route path="runs/:id" element={<RunDetailPage />} />
           <Route path="investigations" element={<InvestigationsPage />} />

@@ -146,39 +146,6 @@ def cmd_service_token(args: argparse.Namespace) -> int:
     return 0
 
 
-def cmd_reset_password(args: argparse.Namespace) -> int:
-    from sqlalchemy import select, update
-
-    from app.core.timeutil import utcnow
-    from app.database.base import db_session, init_engine
-    from app.models import ApiSession, User
-    from app.security.authentication import hash_password
-
-    pw = os.environ.get("AEGIS_NEW_USER_PASSWORD")
-    if not pw:
-        pw = getpass.getpass("New password (min 12 chars): ")
-        if pw != getpass.getpass("Repeat new password: "):
-            print("Passwords do not match", file=sys.stderr)
-            return 1
-    try:
-        new_hash = hash_password(pw)
-    except ValueError as exc:
-        print(exc, file=sys.stderr)
-        return 1
-    init_engine(get_settings().resolved_database_url)
-    with db_session() as db:
-        user = db.execute(select(User).where(User.username == args.username)).scalar_one_or_none()
-        if user is None:
-            print("No such user", file=sys.stderr)
-            return 1
-        user.password_hash = new_hash
-        user.disabled = False
-        db.execute(update(ApiSession).where(ApiSession.user_id == user.id, ApiSession.revoked_at.is_(None))
-                   .values(revoked_at=utcnow()))
-    print(f"Password updated for '{args.username}'. Existing sessions were signed out.")
-    return 0
-
-
 def cmd_run(args: argparse.Namespace) -> int:
     from sqlalchemy import select
 
@@ -221,9 +188,6 @@ def main(argv=None) -> int:
     st.add_argument("--scopes", default=DEFAULT_SERVICE_SCOPES)
     st.add_argument("--quiet", action="store_true")
     st.set_defaults(fn=cmd_service_token)
-    rp = sub.add_parser("reset-password")
-    rp.add_argument("username")
-    rp.set_defaults(fn=cmd_reset_password)
     r = sub.add_parser("run")
     r.add_argument("suite")
     r.add_argument("agent")

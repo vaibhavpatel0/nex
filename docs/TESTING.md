@@ -11,6 +11,10 @@ AEGIS_E2E_PASSWORD=<admin password> node scripts/e2e_browser.js   # needs: npm i
 The pytest session creates a temporary data directory, applies the real Alembic migrations and seed, and uses a
 short execution timeout (0.3 s) so timeout tests are fast.
 
+## Agent connection tests
+
+`tests/connect/` (20 tests) starts real components: a TLS fixture server (test CA) serving A2A, MCP, OpenAPI and AEGIS-API agents plus website, cross-host, redirect, oversized and OAuth cases; a dnslib DNS server for A and TXT records; and a separate AEGIS process. They cover discovery, SSRF refusals, HTTPS-file and DNS TXT verification, credential handling (encryption at rest, model-key refusal, OAuth host binding), tenant isolation, test scopes and daily limits, protected mode with real SENTINEL decisions (deny, approval, allow) and disconnect. `tests/unit/test_netguard.py` covers address and URL rules.
+
 ## Section 14 coverage
 
 | Requirement | Test |
